@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { Quiz, QuizAttempt, QuizResult } from '@/types'
+import type { Quiz, QuizAttempt, QuizResult, QuizSession, Question } from '@/types'
 
 /**
  * Zustand store for managing quiz state globally
@@ -16,6 +16,9 @@ interface QuizStore {
   isLoading: boolean
   error: string | null
 
+  // Quiz session state
+  session: QuizSession | null
+
   // Actions
   setCurrentQuiz: (quiz: Quiz | null) => void
   addQuiz: (quiz: Quiz) => void
@@ -25,6 +28,14 @@ interface QuizStore {
   startAttempt: (quizId: string, userId?: string) => void
   endAttempt: (result: QuizResult) => void
   resetStore: () => void
+
+  // Quiz session actions
+  setQuestions: (questions: Question[]) => void
+  answerQuestion: (questionIndex: number, answerIndex: number) => void
+  nextQuestion: () => void
+  prevQuestion: () => void
+  finishQuiz: () => void
+  resetSession: () => void
 }
 
 const initialState = {
@@ -34,6 +45,7 @@ const initialState = {
   currentAttempt: null,
   isLoading: false,
   error: null,
+  session: null,
 }
 
 export const useQuizStore = create<QuizStore>()(

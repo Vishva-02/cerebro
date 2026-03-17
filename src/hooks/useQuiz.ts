@@ -24,7 +24,7 @@ export const useQuizNavigation = () => {
         setError(message)
       }
     },
-    [setCurrentQuiz, setError]
+    [setError]
   )
 
   const clearCurrentQuiz = useCallback(() => {

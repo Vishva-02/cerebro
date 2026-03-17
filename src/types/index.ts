@@ -52,3 +52,12 @@ export interface AppError {
   message: string
   details?: unknown
 }
+
+export interface QuizSession {
+  questions: Question[]
+  currentQuestionIndex: number
+  selectedAnswers: number[]
+  startTime: Date
+  endTime: Date | null
+  isCompleted: boolean
+}
