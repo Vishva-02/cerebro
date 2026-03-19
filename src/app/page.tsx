@@ -36,7 +36,7 @@ export default function Home() {
       return
     }
 
-    if (parseInt(formData.count, 10) < 5 || parseInt(formData.count, 10) > 20) {
+    if (formData.count < 5 || formData.count > 20) {
       setFormError('Number of questions must be between 5 and 20')
       return
     }
