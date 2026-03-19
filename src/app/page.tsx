@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuizStore } from '@/store/quizStore'
 import type { Question } from '@/types'
@@ -8,7 +8,7 @@ import type { Question } from '@/types'
 interface QuizFormData {
   topic: string
   difficulty: 'easy' | 'medium' | 'hard'
-  count: string
+  count: number
 }
 
 export default function Home() {
@@ -83,7 +83,12 @@ export default function Home() {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'count' ? parseInt(value, 10) : value,
+      [name]:
+        name === 'count'
+          ? Number.isFinite(parseInt(value, 10))
+            ? parseInt(value, 10)
+            : prev.count
+          : value,
     }))
   }
 
@@ -130,7 +135,7 @@ export default function Home() {
                 name="difficulty"
                 value={formData.difficulty}
                 onChange={handleInputChange}
-                className="input-field"
+                className="select"
                 disabled={isGenerating}
               >
                 <option value="easy">Easy - Basic concepts and simple questions</option>

@@ -15,6 +15,8 @@ export const useQuizNavigation = () => {
 
   const selectQuiz = useCallback(
     (quizId: string) => {
+      // This hook is currently a stub; keep the parameter to preserve the API.
+      void quizId
       try {
         // TODO: Fetch quiz from API
         // const quiz = await fetchQuiz(quizId)

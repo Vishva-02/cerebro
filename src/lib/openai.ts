@@ -10,11 +10,17 @@ export type GenerateQuizResponse = {
   questions: Question[]
 }
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
+// Groq provides an OpenAI-compatible chat completions endpoint.
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+// NOTE: `llama3-70b-8192` has been decommissioned on Groq.
+// Recommended replacement (see Groq deprecations): `llama-3.3-70b-versatile`.
+const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile'
 
+// ✅ Validate question
 const validateQuestion = (q: unknown): q is Question => {
   if (typeof q !== 'object' || q === null) return false
   const candidate = q as Record<string, unknown>
+
   return (
     typeof candidate.id === 'string' &&
     typeof candidate.text === 'string' &&
@@ -31,37 +37,36 @@ const validateQuestion = (q: unknown): q is Question => {
   )
 }
 
+// ✅ Prompt
 const openAIPromptTemplate = ({
   topic,
   difficulty,
   count,
-}: GenerateQuizRequest): string => {
-  return `You are an AI assistant that creates high-quality multiple-choice quizzes.
-
+}: GenerateQuizRequest): string => `
 Generate exactly ${count} multiple-choice questions about "${topic}".
 
-Requirements:
+Rules:
 - Difficulty: ${difficulty}
-- Each question must have exactly 4 unique answer options.
-- Provide the correct answer index (0-3) and a short explanation.
-- Return output ONLY as valid JSON in the following schema (no additional text):
+- 4 options
+- correctAnswer index (0–3)
+- include explanation
 
+Return ONLY JSON:
 {
   "questions": [
     {
-      "id": "<unique-id>",
-      "text": "<question text>",
-      "options": ["<opt1>", "<opt2>", "<opt3>", "<opt4>"],
-      "correctAnswer": <0|1|2|3>,
-      "explanation": "<brief explanation>",
+      "id": "q1",
+      "text": "question",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": 0,
+      "explanation": "why",
       "difficulty": "${difficulty}"
     }
   ]
 }
+`
 
-Ensure the JSON is parseable by a strict JSON parser. Do not include any extra fields, comments, or wrapping text.`
-}
-
+// ✅ Fallback
 const createMockQuestions = (
   payload: GenerateQuizRequest,
   prefix = 'mock'
@@ -71,88 +76,97 @@ const createMockQuestions = (
     text: `Mock question ${i + 1} about ${payload.topic}?`,
     options: ['Option A', 'Option B', 'Option C', 'Option D'],
     correctAnswer: Math.floor(Math.random() * 4),
-    explanation: `This is a mock explanation for question ${i + 1}.`,
+    explanation: `Mock explanation ${i + 1}`,
     difficulty: payload.difficulty,
   }))
 
+// ✅ MAIN FUNCTION
 export const generateQuizQuestions = async (
   payload: GenerateQuizRequest
 ): Promise<GenerateQuizResponse> => {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    return { questions: createMockQuestions(payload) }
-  }
-
-  const prompt = openAIPromptTemplate(payload)
-
-  const response = await fetch(OPENAI_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful assistant that only responds with valid JSON. Do not include any additional prose.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.6,
-      max_tokens: 1200,
-    }),
-  })
-
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(
-      `OpenAI API error (${response.status}): ${response.statusText} - ${text}`
-    )
-  }
-
-  const data = (await response.json()) as any
-
-  if (!data?.choices?.[0]?.message?.content) {
-    throw new Error('OpenAI returned unexpected response structure')
-  }
-
-  const content: string = data.choices[0].message.content
-
-  let parsed: unknown
   try {
-    parsed = JSON.parse(content)
-  } catch (error) {
-    throw new Error('Failed to parse JSON response from OpenAI: ' + String(error))
-  }
+    const apiKey = process.env.GROQ_API_KEY
+    const model = process.env.GROQ_MODEL ?? DEFAULT_GROQ_MODEL
 
-  if (
-    typeof parsed !== 'object' ||
-    parsed === null ||
-    !Array.isArray((parsed as any).questions)
-  ) {
-    throw new Error('OpenAI response does not contain questions array')
-  }
-
-  const questions = (parsed as any).questions
-
-  if (questions.length !== payload.count) {
-    throw new Error(
-      `Expected ${payload.count} questions, but got ${questions.length}`
-    )
-  }
-
-  const validated: Question[] = questions.map((q: unknown) => {
-    if (!validateQuestion(q)) {
-      throw new Error('One or more questions failed validation')
+    // 🔥 If no API → fallback
+    if (!apiKey) {
+      console.warn('No Groq API key → using fallback')
+      return { questions: createMockQuestions(payload) }
     }
-    return q
-  })
 
-  return { questions: validated }
+    const prompt = openAIPromptTemplate(payload)
+
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Return only valid JSON. No explanation. No markdown.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.6,
+      }),
+    })
+
+    if (!response.ok) {
+      // Read error body so we can see why Groq rejected the request (auth/model issues).
+      const errorText = await response.text().catch(() => '')
+      throw new Error(
+        `Groq API error (${response.status} ${response.statusText}): ${errorText}`
+      )
+    }
+
+    const data = await response.json()
+
+    let content: string = data.choices?.[0]?.message?.content || ''
+
+    // 🔥 CLEAN RESPONSE (VERY IMPORTANT)
+    content = content
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim()
+
+    let parsed: any
+
+    try {
+      parsed = JSON.parse(content)
+    } catch {
+      // 🔥 FIX BAD JSON
+      const fixed = content
+        .replace(/,\s*}/g, '}')
+        .replace(/,\s*]/g, ']')
+
+      parsed = JSON.parse(fixed)
+    }
+
+    if (!parsed?.questions || !Array.isArray(parsed.questions)) {
+      throw new Error('Invalid structure from AI')
+    }
+
+    const validated: Question[] = parsed.questions.map((q: unknown) => {
+      if (!validateQuestion(q)) {
+        throw new Error('Validation failed')
+      }
+      return q
+    })
+
+    return { questions: validated }
+  } catch (error) {
+    console.error('ERROR → using fallback:', error)
+
+    return {
+      questions: createMockQuestions(payload, 'fallback'),
+    }
+  }
 }

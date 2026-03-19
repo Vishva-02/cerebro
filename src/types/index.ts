@@ -30,7 +30,7 @@ export interface QuizAttempt {
   difficulty: 'easy' | 'medium' | 'hard'
   questionCount: number
   questions: Question[]
-  answers: number[]
+  answers: Record<number, number>
   score: number
   percentage: number
   completedAt: Date
@@ -63,6 +63,8 @@ export interface QuizSession {
   difficulty: 'easy' | 'medium' | 'hard'
   currentQuestionIndex: number
   answers: Record<number, number>
+  // Questions the user explicitly flagged for later review.
+  marked: Record<number, boolean>
   startTime: Date
   endTime: Date | null
   isCompleted: boolean

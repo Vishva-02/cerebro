@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { Quiz, QuizAttempt, QuizResult, QuizSession, Question } from '@/types'
+import type { Quiz, QuizAttempt, QuizSession, Question } from '@/types'
 
 /**
  * Zustand store for managing quiz state globally
@@ -29,6 +29,8 @@ interface QuizStore {
   // Quiz session actions
   setQuestions: (questions: Question[], topic: string, difficulty: 'easy' | 'medium' | 'hard') => void
   answerQuestion: (questionIndex: number, answerIndex: number) => void
+  toggleMarked: (questionIndex: number) => void
+  goToQuestion: (questionIndex: number) => void
   nextQuestion: () => void
   prevQuestion: () => void
   finishQuiz: () => void
@@ -78,6 +80,7 @@ export const useQuizStore = create<QuizStore>()(
               difficulty,
               currentQuestionIndex: 0,
               answers: {}, // Reset answers when starting a new quiz
+              marked: {}, // Reset marks when starting a new quiz
               startTime: new Date(),
               endTime: null,
               isCompleted: false,
@@ -95,6 +98,36 @@ export const useQuizStore = create<QuizStore>()(
               session: {
                 ...state.session,
                 answers: newAnswers,
+              },
+            }
+          }),
+
+        toggleMarked: (questionIndex) =>
+          set((state) => {
+            if (!state.session) return state
+            const next = !state.session.marked?.[questionIndex]
+            return {
+              session: {
+                ...state.session,
+                marked: {
+                  ...(state.session.marked ?? {}),
+                  [questionIndex]: next,
+                },
+              },
+            }
+          }),
+
+        goToQuestion: (questionIndex) =>
+          set((state) => {
+            if (!state.session) return state
+            const bounded = Math.min(
+              Math.max(questionIndex, 0),
+              state.session.questions.length - 1
+            )
+            return {
+              session: {
+                ...state.session,
+                currentQuestionIndex: bounded,
               },
             }
           }),
@@ -179,6 +212,7 @@ export const useQuizStore = create<QuizStore>()(
                 difficulty: attempt.difficulty,
                 currentQuestionIndex: 0,
                 answers: {},
+                marked: {},
                 startTime: new Date(),
                 endTime: null,
                 isCompleted: false,
