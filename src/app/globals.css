@@ -2,55 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom CSS variables */
 :root {
-  --primary: #6366f1;
-  --secondary: #8b5cf6;
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  --color-bg: #0f172a;
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-foreground: #e2e8f0;
+  --color-accent: #a855f7;
+  --color-accent-2: #ec4899;
+  --color-success: #22c55e;
+  --color-error: #f43f5e;
 }
 
-/* Smooth transitions */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at 20% 10%, rgba(99, 102, 241, 0.2), transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.18), transparent 55%),
+    radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.14), transparent 55%);
+  color: var(--color-foreground);
+}
+
 * {
   @apply transition-colors duration-200;
 }
 
-/* Custom utilities */
 @layer components {
+  .glass-card {
+    @apply relative rounded-2xl bg-white/10 border border-white/10 shadow-xl backdrop-blur-lg;
+  }
+
   .btn-primary {
-    @apply px-4 py-2 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/20;
+    background-image: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    @apply shadow-2xl;
+    transform: translateY(-1px) scale(1.02);
   }
 
   .btn-secondary {
-    @apply px-4 py-2 rounded-lg font-medium bg-slate-200 text-slate-900 hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-slate-200 bg-white/10 border border-white/20 shadow-sm;
+    transition: transform 0.2s ease, background 0.2s ease;
   }
 
-  .card {
-    @apply bg-white rounded-xl shadow-md hover:shadow-lg p-6;
+  .btn-secondary:hover {
+    @apply bg-white/15;
+    transform: translateY(-1px);
   }
 
   .input-field {
-    @apply w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+    @apply w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40;
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-indigo-400 via-fuchsia-300 to-pink-400 bg-clip-text text-transparent;
+  }
+
+  .select {
+    @apply w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200;
+  }
+
+  .select:hover {
+    @apply border-gray-400 shadow-md;
+  }
+
+  .select option {
+    @apply bg-white text-gray-900 py-1;
+  }
+
+  .select option:hover {
+    @apply bg-gray-100;
+  }
+
+  .history-bg {
+    background: linear-gradient(135deg, #1e3a8a 0%, #6d28d9 50%, #9333ea 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .history-card {
+    @apply glass-card hover:scale-105 hover:shadow-2xl transition-all duration-300;
   }
 }
 
-/* Loading animation */
+/* Skeleton */
 @keyframes shimmer {
   0% {
-    background-position: -1000px 0;
+    background-position: -1200px 0;
   }
   100% {
-    background-position: 1000px 0;
+    background-position: 1200px 0;
   }
 }
 
-.shimmer {
-  animation: shimmer 2s infinite;
-  background: linear-gradient(to right, #f1f5f9 0%, #e2e8f0 50%, #f1f5f9 100%);
-  background-size: 1000px 100%;
+.skeleton {
+  @apply rounded-xl bg-white/10;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.03) 100%);
+  background-size: 1200px 100%;
+  animation: shimmer 1.6s infinite;
 }

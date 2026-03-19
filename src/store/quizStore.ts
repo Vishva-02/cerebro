@@ -12,7 +12,6 @@ interface QuizStore {
   quizzes: Quiz[]
   currentQuiz: Quiz | null
   attempts: QuizAttempt[]
-  currentAttempt: QuizAttempt | null
   isLoading: boolean
   error: string | null
 
@@ -25,16 +24,15 @@ interface QuizStore {
   removeQuiz: (quizId: string) => void
   setIsLoading: (loading: boolean) => void
   setError: (error: string | null) => void
-  startAttempt: (quizId: string, userId?: string) => void
-  endAttempt: (result: QuizResult) => void
   resetStore: () => void
 
   // Quiz session actions
-  setQuestions: (questions: Question[]) => void
+  setQuestions: (questions: Question[], topic: string, difficulty: 'easy' | 'medium' | 'hard') => void
   answerQuestion: (questionIndex: number, answerIndex: number) => void
   nextQuestion: () => void
   prevQuestion: () => void
   finishQuiz: () => void
+  retakeAttempt: (attemptId: string) => void
   resetSession: () => void
 }
 
@@ -42,7 +40,6 @@ const initialState = {
   quizzes: [],
   currentQuiz: null,
   attempts: [],
-  currentAttempt: null,
   isLoading: false,
   error: null,
   session: null,
@@ -70,39 +67,126 @@ export const useQuizStore = create<QuizStore>()(
 
         setError: (error) => set({ error }),
 
-        startAttempt: (quizId, userId) =>
+        resetStore: () => set(initialState),
+
+        // Quiz session actions
+        setQuestions: (questions, topic, difficulty) =>
           set({
-            currentAttempt: {
-              id: Math.random().toString(36).substr(2, 9),
-              quizId,
-              userId,
-              answers: [],
-              score: 0,
-              percentage: 0,
-              completedAt: new Date(),
-              timeSpent: 0,
+            session: {
+              questions,
+              topic,
+              difficulty,
+              currentQuestionIndex: 0,
+              answers: {}, // Reset answers when starting a new quiz
+              startTime: new Date(),
+              endTime: null,
+              isCompleted: false,
             },
           }),
 
-        endAttempt: (result) =>
-          set((state) => ({
-            currentAttempt: null,
-            attempts: [
-              ...state.attempts,
-              {
-                id: state.currentAttempt?.id || '',
-                quizId: state.currentAttempt?.quizId || '',
-                userId: state.currentAttempt?.userId,
-                answers: result.answers.map((a) => a.selectedAnswer),
-                score: result.score,
-                percentage: result.percentage,
-                completedAt: new Date(),
-                timeSpent: result.timeSpent,
+        answerQuestion: (questionIndex, answerIndex) =>
+          set((state) => {
+            if (!state.session) return state
+            const newAnswers = {
+              ...state.session.answers,
+              [questionIndex]: answerIndex,
+            }
+            return {
+              session: {
+                ...state.session,
+                answers: newAnswers,
               },
-            ],
-          })),
+            }
+          }),
 
-        resetStore: () => set(initialState),
+        nextQuestion: () =>
+          set((state) => {
+            if (!state.session) return state
+            const nextIndex = Math.min(
+              state.session.currentQuestionIndex + 1,
+              state.session.questions.length - 1
+            )
+            return {
+              session: {
+                ...state.session,
+                currentQuestionIndex: nextIndex,
+              },
+            }
+          }),
+
+        prevQuestion: () =>
+          set((state) => {
+            if (!state.session) return state
+            const prevIndex = Math.max(state.session.currentQuestionIndex - 1, 0)
+            return {
+              session: {
+                ...state.session,
+                currentQuestionIndex: prevIndex,
+              },
+            }
+          }),
+
+        finishQuiz: () =>
+          set((state) => {
+            if (!state.session) return state
+
+            const endTime = new Date()
+            const timeSpentSeconds = Math.round(
+              (endTime.getTime() - state.session.startTime.getTime()) / 1000
+            )
+
+            const correctCount = state.session.questions.reduce((count, question, index) => {
+              const answer = state.session?.answers[index]
+              return count + (answer === question.correctAnswer ? 1 : 0)
+            }, 0)
+
+            const percentage = state.session.questions.length
+              ? Math.round((correctCount / state.session.questions.length) * 100)
+              : 0
+
+            const attempt: QuizAttempt = {
+              id: `attempt-${Date.now()}`,
+              quizId: `quiz-${state.session.topic}-${state.session.difficulty}`,
+              topic: state.session.topic,
+              difficulty: state.session.difficulty,
+              questionCount: state.session.questions.length,
+              questions: state.session.questions,
+              answers: state.session.answers,
+              score: correctCount,
+              percentage,
+              completedAt: endTime,
+              timeSpent: timeSpentSeconds,
+            }
+
+            return {
+              session: {
+                ...state.session,
+                endTime,
+                isCompleted: true,
+              },
+              attempts: [...state.attempts, attempt],
+            }
+          }),
+
+        retakeAttempt: (attemptId) =>
+          set((state) => {
+            const attempt = state.attempts.find((a) => a.id === attemptId)
+            if (!attempt) return state
+            return {
+              session: {
+                questions: attempt.questions,
+                topic: attempt.topic,
+                difficulty: attempt.difficulty,
+                currentQuestionIndex: 0,
+                answers: {},
+                startTime: new Date(),
+                endTime: null,
+                isCompleted: false,
+              },
+            }
+          }),
+
+        resetSession: () => set({ session: null }),
       }),
       {
         name: 'quiz-storage', // localStorage key

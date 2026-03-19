@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import '@/app/globals.css'
+import { NavBar } from '@/components/layout/NavBar'
 
 const geist = Geist({
   subsets: ['latin'],
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'AI Quiz App',
-  description: 'Generate and take AI-powered quizzes on any topic',
+  title: 'Quiz Master',
+  description: 'Premium AI-powered quiz experience',
   viewport: {
     width: 'device-width',
     initialScale: 1,
@@ -27,32 +28,27 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en">
+    <html lang="en" className="h-full">
       <body
-        className={`${geist.variable} ${geistMono.variable} bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900 antialiased`}
+        className={`${geist.variable} ${geistMono.variable} min-h-full bg-[#0f172a] text-slate-100 antialiased`}
       >
-        <div className="min-h-screen flex flex-col">
-          {/* Header */}
-          <header className="bg-white shadow-sm border-b border-slate-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Quiz Master
-              </h1>
-              <p className="text-sm text-slate-600 mt-1">
-                AI-powered quiz generation and learning
-              </p>
-            </div>
-          </header>
+        <div className="relative min-h-screen overflow-hidden flex flex-col">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_40%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(236,72,153,0.22),_transparent_45%)]" />
+          </div>
 
-          {/* Main Content */}
-          <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+          <NavBar />
+
+          <main className="relative mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-10">
             {children}
           </main>
 
-          {/* Footer */}
-          <footer className="bg-white border-t border-slate-200 mt-12">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-sm text-slate-600">
-              <p>&copy; 2026 Quiz Master. Built with Next.js & AI.</p>
+          <footer className="relative mt-12 border-t border-white/10 py-8">
+            <div className="mx-auto max-w-6xl text-center text-sm text-slate-400">
+              <p>
+                © {new Date().getFullYear()} Quiz Master. Built with Next.js & AI.
+              </p>
             </div>
           </footer>
         </div>

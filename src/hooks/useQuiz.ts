@@ -38,29 +38,3 @@ export const useQuizNavigation = () => {
   }
 }
 
-/**
- * Hook for managing quiz attempts and results
- */
-export const useQuizAttempt = () => {
-  const { currentAttempt, startAttempt, endAttempt } = useQuizStore()
-
-  const begin = useCallback(
-    (quizId: string, userId?: string) => {
-      startAttempt(quizId, userId)
-    },
-    [startAttempt]
-  )
-
-  const complete = useCallback(
-    (result) => {
-      endAttempt(result)
-    },
-    [endAttempt]
-  )
-
-  return {
-    currentAttempt,
-    begin,
-    complete,
-  }
-}

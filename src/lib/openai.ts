@@ -62,22 +62,25 @@ Requirements:
 Ensure the JSON is parseable by a strict JSON parser. Do not include any extra fields, comments, or wrapping text.`
 }
 
+const createMockQuestions = (
+  payload: GenerateQuizRequest,
+  prefix = 'mock'
+): Question[] =>
+  Array.from({ length: payload.count }, (_, i) => ({
+    id: `${prefix}-${i + 1}`,
+    text: `Mock question ${i + 1} about ${payload.topic}?`,
+    options: ['Option A', 'Option B', 'Option C', 'Option D'],
+    correctAnswer: Math.floor(Math.random() * 4),
+    explanation: `This is a mock explanation for question ${i + 1}.`,
+    difficulty: payload.difficulty,
+  }))
+
 export const generateQuizQuestions = async (
   payload: GenerateQuizRequest
 ): Promise<GenerateQuizResponse> => {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
-    // Mock response for testing when no API key is provided
-    const mockQuestions: Question[] = Array.from({ length: payload.count }, (_, i) => ({
-      id: `mock-${i + 1}`,
-      text: `Mock question ${i + 1} about ${payload.topic}?`,
-      options: ['Option A', 'Option B', 'Option C', 'Option D'],
-      correctAnswer: Math.floor(Math.random() * 4),
-      explanation: `This is a mock explanation for question ${i + 1}.`,
-      difficulty: payload.difficulty,
-    }))
-
-    return { questions: mockQuestions }
+    return { questions: createMockQuestions(payload) }
   }
 
   const prompt = openAIPromptTemplate(payload)

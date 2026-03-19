@@ -26,6 +26,10 @@ export interface QuizAttempt {
   id: string
   quizId: string
   userId?: string
+  topic: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  questionCount: number
+  questions: Question[]
   answers: number[]
   score: number
   percentage: number
@@ -55,8 +59,10 @@ export interface AppError {
 
 export interface QuizSession {
   questions: Question[]
+  topic: string
+  difficulty: 'easy' | 'medium' | 'hard'
   currentQuestionIndex: number
-  selectedAnswers: number[]
+  answers: Record<number, number>
   startTime: Date
   endTime: Date | null
   isCompleted: boolean
