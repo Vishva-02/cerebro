@@ -1,4 +1,5 @@
 import type { Question } from '@/types'
+import Groq from 'groq-sdk'
 
 export type GenerateQuizRequest = {
   topic: string
@@ -10,10 +11,7 @@ export type GenerateQuizResponse = {
   questions: Question[]
 }
 
-// Groq provides an OpenAI-compatible chat completions endpoint.
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-// NOTE: `llama3-70b-8192` has been decommissioned on Groq.
-// Recommended replacement (see Groq deprecations): `llama-3.3-70b-versatile`.
+// Recommended replacement for Groq LLaMA models
 const DEFAULT_GROQ_MODEL = 'llama-3.3-70b-versatile'
 
 // ✅ Validate question
@@ -66,107 +64,66 @@ Return ONLY JSON:
 }
 `
 
-// ✅ Fallback
-const createMockQuestions = (
-  payload: GenerateQuizRequest,
-  prefix = 'mock'
-): Question[] =>
-  Array.from({ length: payload.count }, (_, i) => ({
-    id: `${prefix}-${i + 1}`,
-    text: `Mock question ${i + 1} about ${payload.topic}?`,
-    options: ['Option A', 'Option B', 'Option C', 'Option D'],
-    correctAnswer: Math.floor(Math.random() * 4),
-    explanation: `Mock explanation ${i + 1}`,
-    difficulty: payload.difficulty,
-  }))
-
 // ✅ MAIN FUNCTION
 export const generateQuizQuestions = async (
   payload: GenerateQuizRequest
 ): Promise<GenerateQuizResponse> => {
-  try {
-    const apiKey = process.env.GROQ_API_KEY
-    const model = process.env.GROQ_MODEL ?? DEFAULT_GROQ_MODEL
+  const apiKey = process.env.GROQ_API_KEY
+  const model = process.env.GROQ_MODEL ?? DEFAULT_GROQ_MODEL
 
-    // 🔥 If no API → fallback
-    if (!apiKey) {
-      console.warn('No Groq API key → using fallback')
-      return { questions: createMockQuestions(payload) }
-    }
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY environment variable is missing on the server. Please check your Vercel Environment Variables or local .env.local file.')
+  }
 
-    const prompt = openAIPromptTemplate(payload)
+  const groq = new Groq({ apiKey })
+  const prompt = openAIPromptTemplate(payload)
 
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+  const response = await groq.chat.completions.create({
+    model,
+    messages: [
+      {
+        role: 'system',
+        content: 'Return only valid JSON. No explanation. No markdown.',
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Return only valid JSON. No explanation. No markdown.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.6,
-      }),
-    })
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.6,
+  })
 
-    if (!response.ok) {
-      // Read error body so we can see why Groq rejected the request (auth/model issues).
-      const errorText = await response.text().catch(() => '')
-      throw new Error(
-        `Groq API error (${response.status} ${response.statusText}): ${errorText}`
-      )
-    }
+  let content: string = response.choices?.[0]?.message?.content || ''
 
-    const data = await response.json()
+  // 🔥 CLEAN RESPONSE
+  content = content.replace(/```json/g, '').replace(/```/g, '').trim()
 
-    let content: string = data.choices?.[0]?.message?.content || ''
+  let parsed: any
 
-    // 🔥 CLEAN RESPONSE (VERY IMPORTANT)
-    content = content
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .trim()
-
-    let parsed: any
-
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    // 🔥 FIX BAD JSON
+    const fixed = content.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']')
     try {
-      parsed = JSON.parse(content)
-    } catch {
-      // 🔥 FIX BAD JSON
-      const fixed = content
-        .replace(/,\s*}/g, '}')
-        .replace(/,\s*]/g, ']')
-
       parsed = JSON.parse(fixed)
-    }
-
-    if (!parsed?.questions || !Array.isArray(parsed.questions)) {
-      throw new Error('Invalid structure from AI')
-    }
-
-    const validated: Question[] = parsed.questions.map((q: unknown) => {
-      if (!validateQuestion(q)) {
-        throw new Error('Validation failed')
-      }
-      return q
-    })
-
-    return { questions: validated }
-  } catch (error) {
-    console.error('ERROR → using fallback:', error)
-
-    return {
-      questions: createMockQuestions(payload, 'fallback'),
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", content)
+      throw new Error("AI returned invalid JSON format that could not be parsed.")
     }
   }
+
+  if (!parsed?.questions || !Array.isArray(parsed.questions)) {
+    throw new Error('Invalid structure from AI. Expected a JSON object with a "questions" array.')
+  }
+
+  const validated: Question[] = parsed.questions.map((q: unknown) => {
+    if (!validateQuestion(q)) {
+      console.error("Failed validation on question:", JSON.stringify(q))
+      throw new Error('Validation failed for one or more questions returned by the AI.')
+    }
+    return q
+  })
+
+  return { questions: validated }
 }
