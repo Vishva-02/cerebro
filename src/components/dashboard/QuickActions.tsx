@@ -27,8 +27,6 @@ export function QuickActions({ lastAttempt }: QuickActionsProps) {
                 }
             } catch (err) {
                 console.error(err)
-            } finally {
-                setIsChecking(false)
             }
         }
         checkSession()
