@@ -132,12 +132,12 @@ export default function HistoryPage() {
             <Card key={attempt.id} className="p-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <p className="text-sm text-slate-500">{formatDate(attempt.completedAt)}</p>
+                  <p className="text-sm text-slate-500">{formatDate(attempt.createdAt)}</p>
                   <h2 className="text-xl font-semibold text-textMain">
                     {attempt.topic} ({attempt.difficulty})
                   </h2>
                   <p className="text-sm text-slate-400">
-                    Score: {attempt.score} / {attempt.questionCount} · {attempt.percentage}%
+                    Score: {attempt.score} / {attempt.totalQuestions} · {attempt.percentage}%
                   </p>
                 </div>
 
