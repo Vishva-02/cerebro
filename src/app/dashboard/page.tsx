@@ -7,6 +7,7 @@ import { StatsCards } from '@/components/dashboard/StatsCards'
 import { RecentActivity } from '@/components/dashboard/RecentActivity'
 import { PerformanceChart } from '@/components/dashboard/PerformanceChart'
 import { QuickActions } from '@/components/dashboard/QuickActions'
+import { FloatingInsights } from '@/components/dashboard/FloatingInsights'
 
 export default function DashboardPage() {
     const [stats, setStats] = useState(null)
@@ -57,6 +58,14 @@ export default function DashboardPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                     >
+                        <FloatingInsights />
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                    >
                         <RecentActivity activities={recent} isLoading={isLoading} />
                     </motion.div>
                 </div>
@@ -65,7 +74,7 @@ export default function DashboardPage() {
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.4 }}
+                        transition={{ delay: 0.5 }}
                         className="sticky top-24"
                     >
                         <QuickActions lastAttempt={recent[0] || null} />
