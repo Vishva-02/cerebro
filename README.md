@@ -94,24 +94,177 @@ Reusable React components organized by feature:
 6. **Add utilities**: Add helpers to `/lib/utils.ts`
 
 ---
+🧠 CEREBRO – AI-Powered Quiz Application
 
-## Running the App
+CEREBRO is a modern, AI-driven quiz application built with Next.js that dynamically generates quizzes based on user input. It is designed to provide an interactive and customizable learning experience with a focus on performance, clean UI, and real-world scalability.
 
-```bash
-npm install      # Install dependencies
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run lint     # Run ESLint
-```
+🚀 Live Demo
 
-Visit `http://localhost:3000` in your browser.
+🔗 https://cerebro-sepia.vercel.app
+ (update if needed)
 
----
+📦 Setup Instructions
+1. Clone the Repository
+git clone https://github.com/your-username/cerebro.git
+cd cerebro
+2. Install Dependencies
+npm install
+3. Configure Environment Variables
 
-## Next Steps
+Create a .env.local file in the root directory and add:
 
-- Add API integration layer
-- Create reusable component library
-- Implement authentication
-- Add real-time quiz functionality
-- Deploy to production
+NEXTAUTH_URL=http://localhost:3000
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+AI_API_KEY=your_ai_api_key
+4. Run the Development Server
+npm run dev
+
+App will run at:
+
+http://localhost:3000
+5. Build for Production
+npm run build
+npm start
+🤖 AI Service Integration
+
+Integrated with an AI API (e.g., Google Gemini / OpenAI)
+
+AI generates:
+
+Quiz questions
+
+4 options per question
+
+Correct answers
+
+API is called via Next.js API routes to:
+
+Hide API keys
+
+Handle errors and retries
+
+Implemented:
+
+Loading states during generation
+
+Error handling for failed responses
+
+Basic caching to avoid duplicate requests
+
+🏗 Architecture Decisions
+📁 Project Structure
+app/
+components/
+features/quiz/
+hooks/
+services/
+types/
+utils/
+⚙️ Key Decisions
+
+Next.js App Router
+Used for better routing and server-side capabilities
+
+TypeScript
+Ensures type safety and maintainability
+
+Component-Based Architecture
+Reusable UI components for scalability
+
+State Management
+Used (Context API / Zustand) to manage:
+
+Quiz state
+
+Answers
+
+Timer
+
+History
+
+API Layer (Next.js Routes)
+Handles AI requests securely
+
+✨ Features Implemented
+🎯 Core Features
+
+AI-powered quiz generation
+
+Custom quiz setup:
+
+Topic input
+
+Difficulty selection (Easy / Medium / Hard)
+
+Number of questions
+
+Timer option
+
+Negative marking
+
+Quiz interface:
+
+One question at a time
+
+Next / Previous navigation
+
+Skip question option
+
+Progress tracking
+
+Timer with visual alerts
+
+Auto-save progress
+
+📊 Results & Analytics
+
+Total questions
+
+Answered / Skipped / Not answered
+
+Correct / Wrong answers
+
+Score calculation (with negative marking)
+
+Performance summary
+
+💾 Persistence
+
+Quiz history stored in localStorage
+
+Tracks:
+
+Topic
+
+Score
+
+Difficulty
+
+Date
+
+Option to review past attempts
+
+🎨 UI/UX
+
+Clean and minimal design
+
+Ocean Mint theme
+
+Fully responsive (mobile-first)
+
+Smooth transitions and interactions
+
+⚠️ Known Limitations
+
+AI responses may occasionally be inconsistent or malformed
+
+No backend database (uses localStorage for persistence)
+
+Authentication is basic / optional (if implemented)
+
+Limited question validation from AI responses
+
+Performance depends on external AI API latency
