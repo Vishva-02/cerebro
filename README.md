@@ -236,6 +236,7 @@ Performance depends on external AI API latency
 
 SCREENSHOTS
 <img width="1490" height="807" alt="image" src="https://github.com/user-attachments/assets/e0efc38c-1dc1-417e-9a9f-8bc0811abd8a" />
+<img width="1575" height="840" alt="image" src="https://github.com/user-attachments/assets/fa2751db-61a6-4d53-93d7-7673da2d2888" />
 <img width="1661" height="863" alt="image" src="https://github.com/user-attachments/assets/eb7963c2-0a15-4ff4-84ae-c9edc6a8f726" />
 <img width="1423" height="699" alt="image" src="https://github.com/user-attachments/assets/086ebc58-94ae-400a-a280-5e5aff3fac46" />
 
