@@ -5,11 +5,26 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useSession, signOut } from 'next-auth/react'
 import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { Menu, X, Home, LayoutDashboard, History, LogOut } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 
 
 export function NavBar() {
   const pathname = usePathname()
   const { data: session, status } = useSession()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+
+  // Close menu when pathname changes
+  useEffect(() => {
+    setIsMenuOpen(false)
+  }, [pathname])
+
+  const navLinks = [
+    { href: '/', label: 'Home', icon: Home },
+    ...(status === 'authenticated' ? [{ href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }] : []),
+    { href: '/history', label: 'History', icon: History },
+  ]
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-primary/10 bg-surface/80 backdrop-blur-md">
@@ -25,13 +40,9 @@ export function NavBar() {
           </Link>
         </div>
 
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4">
           <div className="hidden md:flex items-center gap-2">
-            {[
-              { href: '/', label: 'Home' },
-              ...(status === 'authenticated' ? [{ href: '/dashboard', label: 'Dashboard' }] : []),
-              { href: '/history', label: 'History' },
-            ].map((link) => {
+            {navLinks.map((link) => {
               const isActive = pathname === link.href
               return (
                 <Link key={link.href} href={link.href} className="group relative">
@@ -55,8 +66,8 @@ export function NavBar() {
 
           <div className="flex items-center gap-3 border-l border-primary/10 pl-4">
             {status === 'authenticated' ? (
-              <div className="flex items-center gap-3">
-                <div className="flex flex-col items-end">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="hidden sm:flex flex-col items-end">
                   <span className="text-xs font-semibold text-textMain leading-none">{session.user?.name}</span>
                   <button
                     onClick={() => signOut()}
@@ -92,9 +103,59 @@ export function NavBar() {
                 </Link>
               </div>
             )}
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="md:hidden p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-400 hover:text-primary transition-colors"
+            >
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </nav>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden border-t border-primary/10 bg-surface overflow-hidden"
+          >
+            <div className="flex flex-col p-4 gap-2">
+              {navLinks.map((link) => {
+                const Icon = link.icon
+                const isActive = pathname === link.href
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-4 p-4 rounded-xl transition-all ${isActive
+                      ? 'bg-primary/10 text-primary border border-primary/20'
+                      : 'text-slate-400 hover:bg-slate-800/50 hover:text-textMain'
+                      }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="font-bold tracking-wide">{link.label}</span>
+                  </Link>
+                )
+              })}
+
+              {status === 'authenticated' && (
+                <button
+                  onClick={() => signOut()}
+                  className="mt-4 flex items-center gap-4 p-4 rounded-xl text-error hover:bg-error/10 transition-all border border-transparent hover:border-error/20"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-bold tracking-wide">SIGN OUT</span>
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   )
 }
