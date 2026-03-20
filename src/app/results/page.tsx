@@ -6,6 +6,13 @@ import { motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
 import { useSession } from 'next-auth/react'
 
+const formatTime = (ms: number) => {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}m ${seconds.toString().padStart(2, '0')}s`
+}
+
 export default function ResultsPage() {
   const router = useRouter()
   const { session, resetSession, setQuestions } = useQuizStore()
