@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { Quiz, QuizAttempt, QuizSession, Question, ProctoringData, ProctoringViolation } from '@/types'
+import type { Quiz, QuizAttempt, QuizSession, Question, ProctoringData } from '@/types'
 
 /**
  * Zustand store for managing quiz state globally

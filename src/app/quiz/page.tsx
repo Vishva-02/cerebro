@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/common/Button'
 import { ProgressBar } from '@/components/common/ProgressBar'
 import { QuestionTracker } from '@/components/quiz/QuestionTracker'
-import { ProctoringMonitor } from '@/components/quiz/ProctoringMonitor'
 import { ProctoringConsent } from '@/components/quiz/ProctoringConsent'
+
+const ProctoringMonitor = dynamic(
+  () => import('@/components/quiz/ProctoringMonitor').then(mod => mod.ProctoringMonitor),
+  { ssr: false }
+)
 
 export default function QuizPage() {
   const router = useRouter()

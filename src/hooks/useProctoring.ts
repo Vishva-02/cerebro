@@ -84,9 +84,6 @@ export const useProctoring = (isEnabled: boolean = true) => {
 
         // In a real implementation, we would start a requestAnimationFrame loop here
         // checking for faces via a hidden <video> element.
-
-        // For now, we will expose the interface for future integration
-        console.log('Proctoring active: Monitoring Tab and Focus')
     }, [isEnabled, session])
 
     return {
