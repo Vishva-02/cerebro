@@ -190,81 +190,54 @@ Handles AI requests securely
 
 ✨ Features Implemented
 🎯 Core Features
-
 AI-powered quiz generation
-
 Custom quiz setup:
-
 Topic input
-
 Difficulty selection (Easy / Medium / Hard)
-
 Number of questions
-
 Timer option
-
 Negative marking
-
 Quiz interface:
-
 One question at a time
-
 Next / Previous navigation
-
 Skip question option
-
 Progress tracking
-
 Timer with visual alerts
-
 Auto-save progress
 
 📊 Results & Analytics
-
 Total questions
-
 Answered / Skipped / Not answered
-
 Correct / Wrong answers
-
 Score calculation (with negative marking)
-
 Performance summary
 
 💾 Persistence
-
 Quiz history stored in localStorage
-
 Tracks:
-
 Topic
-
 Score
-
 Difficulty
-
 Date
-
 Option to review past attempts
 
 🎨 UI/UX
-
 Clean and minimal design
-
 Ocean Mint theme
-
 Fully responsive (mobile-first)
-
 Smooth transitions and interactions
 
 ⚠️ Known Limitations
-
 AI responses may occasionally be inconsistent or malformed
-
 No backend database (uses localStorage for persistence)
-
 Authentication is basic / optional (if implemented)
-
 Limited question validation from AI responses
-
 Performance depends on external AI API latency
+
+SCREENSHOTS
+<img width="1490" height="807" alt="image" src="https://github.com/user-attachments/assets/e0efc38c-1dc1-417e-9a9f-8bc0811abd8a" />
+<img width="1661" height="863" alt="image" src="https://github.com/user-attachments/assets/eb7963c2-0a15-4ff4-84ae-c9edc6a8f726" />
+<img width="1423" height="699" alt="image" src="https://github.com/user-attachments/assets/086ebc58-94ae-400a-a280-5e5aff3fac46" />
+
+
+
