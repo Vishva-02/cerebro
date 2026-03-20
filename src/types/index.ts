@@ -39,6 +39,21 @@ export interface QuizAttempt {
   percentage: number
   completedAt: Date
   timeSpent: number // in seconds
+  proctoring?: ProctoringData
+}
+
+export interface ProctoringData {
+  focusScore: number
+  violations: ProctoringViolation[]
+  tabSwitches: number
+  faceMissingSeconds: number
+  multipleFacesDetected: boolean
+}
+
+export interface ProctoringViolation {
+  type: 'tab_switch' | 'face_missing' | 'multiple_faces' | 'gaze_away' | 'fast_answer'
+  timestamp: Date
+  details?: string
 }
 
 export interface QuizResult {
@@ -77,4 +92,5 @@ export interface QuizSession {
   timeLimit?: number // in minutes
   negativeMarking?: boolean
   negativeMarksPerWrong?: number
+  proctoring?: ProctoringData
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { Quiz, QuizAttempt, QuizSession, Question } from '@/types'
+import type { Quiz, QuizAttempt, QuizSession, Question, ProctoringData, ProctoringViolation } from '@/types'
 
 /**
  * Zustand store for managing quiz state globally
@@ -38,6 +38,8 @@ interface QuizStore {
   retakeAttempt: (attemptId: string) => void
   resetSession: () => void
   loadSession: (dbSession: any) => void
+  updateProctoring: (data: Partial<ProctoringData>) => void
+  startSession: () => void
 }
 
 const initialState = {
@@ -90,6 +92,13 @@ export const useQuizStore = create<QuizStore>()(
               timeLimit,
               negativeMarking,
               negativeMarksPerWrong,
+              proctoring: {
+                focusScore: 100,
+                violations: [],
+                tabSwitches: 0,
+                faceMissingSeconds: 0,
+                multipleFacesDetected: false
+              }
             },
           }),
 
@@ -234,6 +243,7 @@ export const useQuizStore = create<QuizStore>()(
               percentage,
               completedAt: endTime,
               timeSpent: timeSpentSeconds,
+              proctoring: state.session.proctoring,
             }
 
             return {
@@ -278,8 +288,48 @@ export const useQuizStore = create<QuizStore>()(
               isCompleted: false,
               marked: {},
               explicitlySkipped: {},
+              proctoring: dbSession.proctoring || {
+                focusScore: 100,
+                violations: [],
+                tabSwitches: 0,
+                faceMissingSeconds: 0,
+                multipleFacesDetected: false
+              }
             }
           })),
+
+        updateProctoring: (data) =>
+          set((state) => {
+            if (!state.session) return state
+            const current = state.session.proctoring || {
+              focusScore: 100,
+              violations: [],
+              tabSwitches: 0,
+              faceMissingSeconds: 0,
+              multipleFacesDetected: false
+            }
+
+            return {
+              session: {
+                ...state.session,
+                proctoring: {
+                  ...current,
+                  ...data,
+                }
+              }
+            }
+          }),
+
+        startSession: () =>
+          set((state) => {
+            if (!state.session) return state
+            return {
+              session: {
+                ...state.session,
+                startTime: new Date()
+              }
+            }
+          }),
       }),
       {
         name: 'quiz-storage', // localStorage key

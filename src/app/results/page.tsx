@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
 import { useSession } from 'next-auth/react'
+import { ProctoringSummary } from '@/components/quiz/ProctoringSummary'
 
 const formatTime = (ms: number) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
@@ -138,6 +139,8 @@ export default function ResultsPage() {
         <h1 className="text-4xl md:text-5xl font-extrabold text-textMain tracking-tight">Quiz Complete!</h1>
         <p className="text-lg text-primary font-medium">{message}</p>
       </div>
+
+      <ProctoringSummary data={session.proctoring} />
 
       {status !== 'authenticated' && (
         <motion.div

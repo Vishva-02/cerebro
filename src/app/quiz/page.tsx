@@ -8,6 +8,8 @@ import { useSession } from 'next-auth/react'
 import { Button } from '@/components/common/Button'
 import { ProgressBar } from '@/components/common/ProgressBar'
 import { QuestionTracker } from '@/components/quiz/QuestionTracker'
+import { ProctoringMonitor } from '@/components/quiz/ProctoringMonitor'
+import { ProctoringConsent } from '@/components/quiz/ProctoringConsent'
 
 export default function QuizPage() {
   const router = useRouter()
@@ -21,7 +23,10 @@ export default function QuizPage() {
     prevQuestion, // Renamed to previousQuestion in the instruction's proposed destructuring, but keeping original for now based on context
     skipQuestion,
     finishQuiz,
+    startSession,
   } = useQuizStore()
+
+  const [hasConsented, setHasConsented] = useState(false)
 
 
   // Redirect if no session
@@ -211,8 +216,16 @@ export default function QuizPage() {
     exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -20 : 20 }),
   }
 
+  if (!hasConsented) {
+    return <ProctoringConsent onConsent={() => {
+      setHasConsented(true)
+      startSession()
+    }} />
+  }
+
   return (
     <div className="relative mx-auto w-full max-w-6xl">
+      <ProctoringMonitor />
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
 
         {/* Left tracker */}
