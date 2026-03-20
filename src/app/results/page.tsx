@@ -4,17 +4,12 @@ import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
-
-const formatTime = (ms: number) => {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${minutes}m ${seconds.toString().padStart(2, '0')}s`
-}
+import { useSession } from 'next-auth/react'
 
 export default function ResultsPage() {
   const router = useRouter()
   const { session, resetSession, setQuestions } = useQuizStore()
+  const { status } = useSession()
 
   useEffect(() => {
     if (!session || session.questions.length === 0 || !session.isCompleted) {
@@ -136,6 +131,29 @@ export default function ResultsPage() {
         <h1 className="text-4xl md:text-5xl font-extrabold text-textMain tracking-tight">Quiz Complete!</h1>
         <p className="text-lg text-primary font-medium">{message}</p>
       </div>
+
+      {status !== 'authenticated' && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center space-y-3"
+        >
+          <p className="text-textMain font-bold italic">
+            &quot;Take your progress to the next level!&quot;
+          </p>
+          <p className="text-sm text-slate-400 max-w-lg mx-auto">
+            You are in <strong>Guest Mode</strong>. Sign in to save your scores, track your performance, and see where you stand on the leaderboard!
+          </p>
+          <div className="flex items-center justify-center gap-4 pt-2">
+            <button
+              onClick={() => router.push('/signup')}
+              className="text-xs font-bold bg-primary text-slate-900 px-4 py-2 rounded-lg hover:bg-white transition-colors uppercase tracking-tight"
+            >
+              Sign Up Now
+            </button>
+          </div>
+        </motion.div>
+      )}
 
       {/* Main Stats Card */}
       <div className="glass-card p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-10">

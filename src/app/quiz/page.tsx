@@ -4,12 +4,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
+import { useSession } from 'next-auth/react'
 import { Button } from '@/components/common/Button'
 import { ProgressBar } from '@/components/common/ProgressBar'
 import { QuestionTracker } from '@/components/quiz/QuestionTracker'
 
 export default function QuizPage() {
   const router = useRouter()
+  const { status } = useSession()
   const {
     session,
     answerQuestion,
@@ -93,6 +95,7 @@ export default function QuizPage() {
     if (!session || session.isCompleted || !timeLeft) return
 
     const saveSession = async () => {
+      if (status !== 'authenticated') return
       try {
         await fetch('/api/quiz/session', {
           method: 'POST',
@@ -144,7 +147,7 @@ export default function QuizPage() {
     // 2. Persist to DB if authenticated
     const results = useQuizStore.getState().attempts.slice(-1)[0] // Get the last attempt
 
-    if (results) {
+    if (results && status === 'authenticated') {
       try {
         await fetch('/api/quiz/attempt', {
           method: 'POST',

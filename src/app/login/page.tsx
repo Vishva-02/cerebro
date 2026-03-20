@@ -148,12 +148,17 @@ export default function LoginPage() {
                     Continue with Google
                 </button>
 
-                <p className="mt-8 text-center text-sm text-slate-400">
-                    Don&apos;t have an account?{' '}
-                    <Link href="/signup" className="font-bold text-primary hover:underline">
-                        Sign up for free
+                <div className="mt-8 flex flex-col items-center gap-4">
+                    <p className="text-sm text-slate-400">
+                        Don&apos;t have an account?{' '}
+                        <Link href="/signup" className="font-bold text-primary hover:underline">
+                            Sign up for free
+                        </Link>
+                    </p>
+                    <Link href="/" className="text-xs font-bold text-slate-500 hover:text-primary transition-colors">
+                        Continue as Guest
                     </Link>
-                </p>
+                </div>
             </motion.div>
         </div>
     )
