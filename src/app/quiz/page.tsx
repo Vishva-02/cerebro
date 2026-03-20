@@ -1,12 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
 import { Button } from '@/components/common/Button'
 import { ProgressBar } from '@/components/common/ProgressBar'
-import { AnimatedBackground } from '@/components/quiz/AnimatedBackground'
 import { QuestionTracker } from '@/components/quiz/QuestionTracker'
 
 export default function QuizPage() {
@@ -29,7 +28,6 @@ export default function QuizPage() {
   }, [session, router])
 
   const markedMap = session?.marked ?? {}
-
   const isLoading = !session || session.questions.length === 0
   const currentIndex = session?.currentQuestionIndex ?? 0
 
@@ -57,6 +55,44 @@ export default function QuizPage() {
     lastIndexRef.current = currentIndex
   }, [currentIndex, session])
 
+  // Timer Logic
+  const timeLimitMs = session?.timeLimit ? session.timeLimit * 60 * 1000 : null
+  const [timeLeft, setTimeLeft] = useState<number | null>(timeLimitMs)
+
+  useEffect(() => {
+    if (timeLimitMs === null || !session?.startTime || session.isCompleted) return
+
+    const tick = () => {
+      const elapsed = Date.now() - new Date(session.startTime).getTime()
+      const remaining = Math.max(0, timeLimitMs - elapsed)
+      setTimeLeft(remaining)
+
+      if (remaining === 0) {
+        finishQuiz()
+        router.push('/results')
+      }
+    }
+
+    tick()
+    const timerId = setInterval(tick, 1000)
+    return () => clearInterval(timerId)
+  }, [timeLimitMs, session?.startTime, session?.isCompleted, finishQuiz, router])
+
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  const getTimerColorClass = () => {
+    if (timeLeft === null || timeLimitMs === null) return 'text-primary'
+    const ratio = timeLeft / timeLimitMs
+    if (ratio > 0.5) return 'text-primary'
+    if (ratio > 0.2) return 'text-warning'
+    return 'text-error animate-pulse font-bold'
+  }
+
   const handleAnswerSelect = (answerIndex: number) => {
     if (!session) return
     answerQuestion(currentIndex, answerIndex)
@@ -77,37 +113,9 @@ export default function QuizPage() {
 
   if (isLoading) {
     return (
-      <div className="relative mx-auto max-w-6xl">
-        <AnimatedBackground />
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-          <div className="glass-card p-4 lg:p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <div className="h-4 w-28 skeleton rounded-lg" />
-              <div className="h-4 w-18 skeleton rounded-lg" />
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {Array.from({ length: 10 }).map((_, idx) => (
-                <div key={idx} className="skeleton aspect-square rounded-xl" />
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-card p-6 lg:p-8">
-            <div className="flex items-center justify-between gap-4 mb-6">
-              <div className="skeleton h-5 w-52 rounded-lg" />
-              <div className="skeleton h-5 w-24 rounded-lg" />
-            </div>
-            <div className="skeleton h-10 w-full rounded-xl mb-6" />
-            <div className="space-y-3 mb-8">
-              {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="skeleton h-16 rounded-xl" />
-              ))}
-            </div>
-            <div className="flex justify-between gap-4">
-              <div className="skeleton h-12 w-28 rounded-full" />
-              <div className="skeleton h-12 w-36 rounded-full" />
-            </div>
-          </div>
+      <div className="relative mx-auto w-full max-w-6xl">
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     )
@@ -117,30 +125,17 @@ export default function QuizPage() {
   if (!currentQuestion) return null
 
   const questionSlideVariants = {
-    enter: (dir: number) => ({
-      opacity: 0,
-      x: dir > 0 ? 28 : -28,
-      filter: 'blur(6px)',
-    }),
-    center: {
-      opacity: 1,
-      x: 0,
-      filter: 'blur(0px)',
-    },
-    exit: (dir: number) => ({
-      opacity: 0,
-      x: dir > 0 ? -28 : 28,
-      filter: 'blur(6px)',
-    }),
+    enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 20 : -20 }),
+    center: { opacity: 1, x: 0 },
+    exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -20 : 20 }),
   }
 
   return (
-    <div className="relative mx-auto max-w-6xl">
-      <AnimatedBackground />
+    <div className="relative mx-auto w-full max-w-6xl">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
 
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
         {/* Left tracker */}
-        <aside className="lg:sticky lg:top-24 self-start">
+        <aside className="lg:sticky lg:top-24 self-start space-y-6">
           <QuestionTracker
             count={totalQuestions}
             currentIndex={currentIndex}
@@ -149,143 +144,124 @@ export default function QuizPage() {
             onSelect={goToQuestion}
           />
 
-          {/* Small summary */}
-          <div className="glass-card mt-4 p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-white/85">Progress</p>
-              <p className="text-sm text-slate-300/75">{Math.round(progress)}%</p>
+          <div className="glass-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Progress</p>
+              <p className="text-sm font-bold text-primary">{Math.round(progress)}%</p>
             </div>
-            <div className="mt-3">
-              <ProgressBar progress={progress} />
+            <ProgressBar progress={progress} />
+            <div className="mt-4 text-center text-xs text-slate-400">
+              {answeredCount} of {totalQuestions} answered
             </div>
           </div>
         </aside>
 
         {/* Right main quiz */}
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="glass-card p-5 lg:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-bold text-white/95">
-                  Question {currentIndex + 1} / {totalQuestions}
-                </h1>
-                <p className="text-sm text-slate-300/70">
-                  Choose the best answer. Mark questions for review.
-                </p>
-              </div>
+        <div className="flex flex-col space-y-6">
 
-              <div className="flex items-center gap-2">
-                <motion.button
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => toggleMarked(currentIndex)}
-                  className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold border transition-all duration-300 ease-in-out ${
-                    currentMarked
-                      ? 'border-yellow-400/60 bg-yellow-400/10 text-yellow-100 shadow-[0_0_22px_rgba(250,204,21,0.25)]'
-                      : 'border-white/15 bg-white/5 text-slate-200/80 hover:bg-white/10'
+          {/* Header */}
+          <div className="glass-card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span className="inline-block px-3 py-1 rounded-md bg-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Question {currentIndex + 1} of {totalQuestions}
+              </span>
+              <h1 className="text-lg text-slate-300">
+                Choose the best answer below.
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {timeLeft !== null && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700">
+                  <span className="text-sm text-slate-400">⏱ Time:</span>
+                  <span className={`text-lg tracking-wider font-mono ${getTimerColorClass()}`}>
+                    {formatTime(timeLeft)}
+                  </span>
+                </div>
+              )}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => toggleMarked(currentIndex)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${currentMarked
+                    ? 'border-warning/50 bg-warning/10 text-warning'
+                    : 'border-slate-600 bg-transparent text-slate-400 hover:border-slate-400 hover:text-slate-200'
                   }`}
-                >
-                  {currentMarked ? 'Marked' : 'Mark for review'}
-                </motion.button>
-              </div>
+              >
+                {currentMarked ? '📍 Marked' : 'Mark for review'}
+              </motion.button>
             </div>
           </div>
 
           {/* Question + options (animated switch) */}
-          <AnimatePresence custom={transitionDir} mode="wait">
-            <motion.div
-              key={currentQuestion?.id ?? currentIndex}
-              custom={transitionDir}
-              variants={questionSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{ duration: 0.32, ease: 'easeInOut' }}
-              className="glass-card p-6 lg:p-8"
-            >
-              <motion.h2
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: 'easeInOut' }}
-                className="text-xl sm:text-2xl font-semibold text-white/95 leading-relaxed"
+          <div className="glass-card p-6 sm:p-10 flex-grow">
+            <AnimatePresence custom={transitionDir} mode="wait">
+              <motion.div
+                key={currentQuestion?.id ?? currentIndex}
+                custom={transitionDir}
+                variants={questionSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.25, ease: 'easeOut' }}
               >
-                {currentQuestion.text}
-              </motion.h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-textMain leading-snug mb-8">
+                  {currentQuestion.text}
+                </h2>
 
-              <div className="mt-6 grid grid-cols-1 gap-3">
-                {currentQuestion.options.map((option, index) => {
-                  const selected = selectedAnswer === index
-                  const letter = String.fromCharCode(65 + index)
+                <div className="grid grid-cols-1 gap-4">
+                  {currentQuestion.options.map((option, index) => {
+                    const selected = selectedAnswer === index
+                    const letter = String.fromCharCode(65 + index)
 
-                  const optionBase =
-                    'w-full text-left rounded-2xl border px-4 py-4 transition-all duration-300 ease-in-out'
-
-                  const optionState = selected
-                    ? 'border-indigo-400/60 bg-indigo-400/10 shadow-[0_0_28px_rgba(99,102,241,0.35)]'
-                    : 'border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/25'
-
-                  return (
-                    <motion.button
-                      key={index}
-                      onClick={() => handleAnswerSelect(index)}
-                      whileHover={{ y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`${optionBase} ${optionState}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 border border-white/15 text-slate-100/90 font-bold">
-                          {letter}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm sm:text-base font-medium text-white/90">
+                    return (
+                      <motion.button
+                        key={index}
+                        onClick={() => handleAnswerSelect(index)}
+                        whileHover={{ y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`w-full text-left rounded-2xl border px-5 py-4 transition-all duration-300 ${selected
+                            ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(45,212,191,0.15)]'
+                            : 'border-slate-700 bg-surface hover:border-slate-500 hover:bg-slate-800/80'
+                          }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl font-bold ${selected ? 'bg-primary text-slate-900' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}>
+                            {letter}
+                          </div>
+                          <p className={`text-base font-medium ${selected ? 'text-primary' : 'text-slate-200'}`}>
                             {option}
                           </p>
-                          {selected && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <span className="h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_14px_rgba(99,102,241,0.55)]" />
-                              <p className="text-xs text-slate-300/70">
-                                Selected
-                              </p>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    </motion.button>
-                  )
-                })}
-              </div>
+                      </motion.button>
+                    )
+                  })}
+                </div>
 
-              {/* Navigation */}
-              <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <Button
-                  onClick={handlePrevious}
-                  disabled={currentIndex === 0}
-                  variant="secondary"
-                  className="w-full sm:w-auto px-8 py-3 rounded-full"
-                >
-                  Previous
-                </Button>
+                {/* Navigation */}
+                <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-700/50 pt-8">
+                  <Button
+                    onClick={handlePrevious}
+                    disabled={currentIndex === 0}
+                    variant="secondary"
+                    className="w-full sm:w-auto px-8"
+                  >
+                    Previous
+                  </Button>
 
-                <motion.div whileHover={{ y: -1 }} className="w-full sm:w-auto">
                   <Button
                     onClick={handleNext}
-                    disabled={!hasAnswer}
-                    className={`w-full px-8 py-3 rounded-full ${
-                      hasAnswer ? 'shadow-pink-500/20' : ''
-                    }`}
+                    disabled={!hasAnswer && !isLastQuestion} // Allows finishing even if not all answered
+                    className="w-full sm:w-auto px-10 btn-primary"
                   >
-                    {isLastQuestion ? 'Finish Quiz' : 'Next'}
+                    {isLastQuestion ? 'Submit Final Quiz' : 'Next Question'}
                   </Button>
-                </motion.div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Footer micro UX */}
-          <div className="text-center text-sm text-slate-300/70">
-            {answeredCount} of {totalQuestions} answered
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
+
         </div>
       </div>
     </div>

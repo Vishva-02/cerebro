@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Quiz Master',
-  description: 'Premium AI-powered quiz experience',
+  title: 'CEREBRO',
+  description: 'AI-Powered Quiz Platform',
 }
 
 export const viewport: Viewport = {
@@ -23,33 +23,18 @@ export const viewport: Viewport = {
   initialScale: 1,
 }
 
-interface RootLayoutProps {
-  children: React.ReactNode
-}
-
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full">
-      <body
-        className={`${geist.variable} ${geistMono.variable} min-h-full bg-[#0f172a] text-slate-100 antialiased`}
-      >
-        <div className="relative min-h-screen overflow-hidden flex flex-col">
-          <div className="pointer-events-none absolute inset-0">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.25),_transparent_40%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(236,72,153,0.22),_transparent_45%)]" />
-          </div>
-
+      <body className={`${geist.variable} ${geistMono.variable} min-h-full antialiased`}>
+        <div className="relative flex min-h-screen flex-col">
           <NavBar />
-
-          <main className="relative mx-auto max-w-6xl w-full px-4 sm:px-6 lg:px-8 py-10">
+          <main className="relative flex w-full flex-grow flex-col justify-center px-4 py-10 sm:px-6 lg:px-8">
             {children}
           </main>
-
-          <footer className="relative mt-12 border-t border-white/10 py-8">
-            <div className="mx-auto max-w-6xl text-center text-sm text-slate-400">
-              <p>
-                © {new Date().getFullYear()} Quiz Master. Built with Next.js & AI.
-              </p>
+          <footer className="relative mt-auto border-t border-primary/10 py-10">
+            <div className="mx-auto text-center text-sm text-slate-500">
+              <p>© {new Date().getFullYear()} CEREBRO. Push yourself.</p>
             </div>
           </footer>
         </div>

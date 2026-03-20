@@ -13,39 +13,37 @@ export function NavBar() {
   const pathname = usePathname()
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 w-full border-b border-primary/10 bg-surface/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-pink-500 shadow-lg shadow-pink-500/30">
-            <span className="text-lg font-bold text-white">Q</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold tracking-wide text-white">Quiz Master</p>
-            <p className="text-xs text-slate-200/80">AI-powered learning studio</p>
-          </div>
+          <Link href="/" className="group flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
+              <span className="text-xl font-bold text-slate-900">C</span>
+            </div>
+            <span className="text-lg font-bold tracking-widest text-textMain transition-colors group-hover:text-primary">
+              CEREBRO
+            </span>
+          </Link>
         </div>
 
         <nav className="flex items-center gap-2">
           {navLinks.map((link) => {
             const isActive = pathname === link.href
             return (
-              <Link key={link.href} href={link.href} className="relative">
-                <motion.span
-                  initial={false}
-                  animate={{
-                    color: isActive ? 'rgb(240 249 255)' : 'rgb(226 232 240)',
-                  }}
-                  className="relative rounded-md px-3 py-2 text-sm font-medium"
+              <Link key={link.href} href={link.href} className="group relative">
+                <span
+                  className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'text-primary' : 'text-slate-400 group-hover:text-textMain'
+                    }`}
                 >
                   {link.label}
                   {isActive && (
                     <motion.span
                       layoutId="active-nav"
-                      className="absolute inset-0 rounded-md bg-white/10"
+                      className="absolute inset-x-0 -bottom-[21px] h-[2px] bg-primary"
                       transition={{ type: 'spring', stiffness: 350, damping: 30 }}
                     />
                   )}
-                </motion.span>
+                </span>
               </Link>
             )
           })}

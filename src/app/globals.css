@@ -3,14 +3,15 @@
 @tailwind utilities;
 
 :root {
-  --color-bg: #0f172a;
-  --color-surface: rgba(255, 255, 255, 0.06);
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-foreground: #e2e8f0;
-  --color-accent: #a855f7;
-  --color-accent-2: #ec4899;
-  --color-success: #22c55e;
-  --color-error: #f43f5e;
+  --color-bg: #0F172A;
+  --color-surface: #1E293B;
+  --color-border: rgba(45, 212, 191, 0.2);
+  --color-foreground: #F1F5F9;
+  --color-primary: #2DD4BF;
+  --color-secondary: #38BDF8;
+  --color-accent: #14B8A6;
+  --color-success: #10b981;
+  --color-error: #ef4444;
 }
 
 html,
@@ -19,80 +20,58 @@ body {
 }
 
 body {
-  background: radial-gradient(circle at 20% 10%, rgba(99, 102, 241, 0.2), transparent 60%),
-    radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.18), transparent 55%),
-    radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.14), transparent 55%);
+  background-color: var(--color-bg);
+  /* A very subtle mint gradient hint in the top left and bottom right */
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(45, 212, 191, 0.05), transparent 50%),
+    radial-gradient(circle at 90% 90%, rgba(56, 189, 248, 0.05), transparent 50%);
   color: var(--color-foreground);
+  font-family: var(--font-geist-sans), sans-serif;
+  letter-spacing: -0.01em;
 }
 
 * {
-  @apply transition-colors duration-200;
+  @apply transition-colors duration-300;
 }
 
 @layer components {
+  /* Minimalist modern surface cards */
   .glass-card {
-    @apply relative rounded-2xl bg-white/10 border border-white/10 shadow-xl backdrop-blur-lg transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-2xl;
+    @apply relative rounded-2xl bg-surface border border-primary/20 shadow-lg transition-all duration-300 ease-in-out hover:border-primary/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/20;
-    background-image: linear-gradient(135deg, var(--color-accent), var(--color-accent-2));
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .btn-primary:hover {
-    @apply shadow-2xl;
-    transform: translateY(-1px) scale(1.02);
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-slate-900 bg-primary shadow-lg shadow-primary/20 transition-all duration-300 ease-out hover:scale-105 hover:bg-accent hover:shadow-primary/40 active:scale-95;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold text-slate-200 bg-white/10 border border-white/20 shadow-sm;
-    transition: transform 0.2s ease, background 0.2s ease;
-  }
-
-  .btn-secondary:hover {
-    @apply bg-white/15;
-    transform: translateY(-1px);
+    @apply inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold text-primary bg-transparent border border-primary/30 transition-all duration-300 ease-out hover:bg-primary/10 hover:border-primary/50 active:scale-95;
   }
 
   .input-field {
-    @apply w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40;
+    @apply w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-sm text-textMain placeholder:text-slate-500 transition-all duration-300 focus:border-primary focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/20 hover:border-slate-600;
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-indigo-400 via-fuchsia-300 to-pink-400 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent;
   }
 
+  /* Minimal select dropdown */
   .select {
-    @apply w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200;
-  }
-
-  .select:hover {
-    @apply border-gray-400 shadow-md;
+    @apply input-field cursor-pointer appearance-none;
   }
 
   .select option {
-    @apply bg-white text-gray-900 py-1;
+    @apply bg-surface text-textMain py-2;
   }
 
-  .select option:hover {
-    @apply bg-gray-100;
-  }
-
+  /* Remove flashy animations for a cleaner SaaS look */
   .history-bg {
-    background: linear-gradient(135deg, #1e3a8a 0%, #6d28d9 50%, #9333ea 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-  }
-
-  @keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    @apply bg-surface border border-slate-700;
   }
 
   .history-card {
-    @apply glass-card hover:scale-105 hover:shadow-2xl transition-all duration-300;
+    @apply glass-card hover:border-secondary/40;
   }
 }
 

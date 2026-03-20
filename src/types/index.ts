@@ -31,7 +31,9 @@ export interface QuizAttempt {
   questionCount: number
   questions: Question[]
   answers: Record<number, number>
-  score: number
+  score: number // Correct answers
+  finalScore: number // Score after deductions
+  negativeMarksDeducted: number
   percentage: number
   completedAt: Date
   timeSpent: number // in seconds
@@ -68,4 +70,7 @@ export interface QuizSession {
   startTime: Date
   endTime: Date | null
   isCompleted: boolean
+  timeLimit?: number // in minutes
+  negativeMarking?: boolean
+  negativeMarksPerWrong?: number
 }

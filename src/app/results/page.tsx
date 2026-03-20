@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
-import { Button } from '@/components/common/Button'
-import { Card } from '@/components/common/Card'
 
 const formatTime = (ms: number) => {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
@@ -18,26 +17,33 @@ export default function ResultsPage() {
   const { session, resetSession } = useQuizStore()
 
   useEffect(() => {
-    // If there's no completed session, redirect to home
     if (!session || session.questions.length === 0 || !session.isCompleted) {
       router.replace('/')
     }
   }, [router, session])
 
-  const { score, percentage, timeTaken, questionResults } = useMemo(() => {
+  const {
+    correctCount,
+    wrongCount,
+    answeredCount,
+    deductions,
+    finalScore,
+    percentage,
+    timeTaken,
+    questionResults,
+    message,
+  } = useMemo(() => {
     if (!session) {
       return {
-        score: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        answeredCount: 0,
+        deductions: 0,
+        finalScore: 0,
         percentage: 0,
         timeTaken: 0,
-        questionResults: [] as Array<{
-          questionText: string
-          options: string[]
-          selectedAnswer: number
-          correctAnswer: number
-          explanation: string
-          isCorrect: boolean
-        }>,
+        questionResults: [],
+        message: '',
       }
     }
 
@@ -58,16 +64,32 @@ export default function ResultsPage() {
       }
     })
 
-    const correctCount = questionResults.filter((r) => r.isCorrect).length
-    const percentage = session.questions.length
-      ? Math.round((correctCount / session.questions.length) * 100)
-      : 0
+    const correct = questionResults.filter((r) => r.isCorrect).length
+    const answered = Object.keys(session.answers).length
+    const wrong = answered - correct
+
+    let negativePoints = 0
+    if (session.negativeMarking && session.negativeMarksPerWrong) {
+      negativePoints = wrong * session.negativeMarksPerWrong
+    }
+
+    const scoreAfterPenalty = Math.max(0, correct - negativePoints)
+    const pct = session.questions.length ? Math.round((correct / session.questions.length) * 100) : 0
+
+    let msg = "Keep practicing! Review the explanations below to learn more."
+    if (pct >= 90) msg = "Excellent! You have a deep understanding of this topic."
+    else if (pct >= 70) msg = "Good job! You did well, but there's room for improvement."
 
     return {
-      score: correctCount,
-      percentage,
+      correctCount: correct,
+      wrongCount: wrong,
+      answeredCount: answered,
+      deductions: negativePoints,
+      finalScore: scoreAfterPenalty,
+      percentage: pct,
       timeTaken: timeTakenMs,
       questionResults,
+      message: msg,
     }
   }, [session])
 
@@ -80,104 +102,159 @@ export default function ResultsPage() {
     return null
   }
 
+  // Circular progress math
+  const radius = 60
+  const circumference = 2 * Math.PI * radius
+  const strokeDashoffset = circumference - (percentage / 100) * circumference
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-10">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-slate-900">Quiz Results</h1>
-        <p className="text-slate-600 mt-2">Here’s how you did — great work!</p>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto space-y-8 pb-16 w-full">
+
+      {/* Header section */}
+      <div className="text-center space-y-2">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-textMain tracking-tight">Quiz Complete!</h1>
+        <p className="text-lg text-primary font-medium">{message}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-6">
-          <p className="text-sm text-slate-500">Score</p>
-          <p className="text-4xl font-bold text-indigo-600">{score}</p>
-          <p className="text-sm text-slate-500">out of {session.questions.length}</p>
-        </Card>
+      {/* Main Stats Card */}
+      <div className="glass-card p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-10">
 
-        <Card className="p-6">
-          <p className="text-sm text-slate-500">Percentage</p>
-          <p className="text-4xl font-bold text-indigo-600">{percentage}%</p>
-          <p className="text-sm text-slate-500">of questions correct</p>
-        </Card>
+        {/* Circle Chart */}
+        <div className="relative flex items-center justify-center shrink-0">
+          <svg className="w-48 h-48 transform -rotate-90">
+            <circle
+              cx="96" cy="96" r={radius}
+              stroke="currentColor" strokeWidth="12" fill="transparent"
+              className="text-slate-800"
+            />
+            <motion.circle
+              initial={{ strokeDashoffset: circumference }}
+              animate={{ strokeDashoffset }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              cx="96" cy="96" r={radius}
+              stroke="currentColor" strokeWidth="12" fill="transparent"
+              strokeLinecap="round"
+              className="text-primary"
+              style={{ strokeDasharray: circumference }}
+            />
+          </svg>
+          <div className="absolute flex flex-col items-center justify-center">
+            <span className="text-4xl font-black text-textMain">{percentage}%</span>
+            <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Accuracy</span>
+          </div>
+        </div>
 
-        <Card className="p-6">
-          <p className="text-sm text-slate-500">Time Taken</p>
-          <p className="text-4xl font-bold text-indigo-600">{formatTime(timeTaken)}</p>
-          <p className="text-sm text-slate-500">from start to finish</p>
-        </Card>
-      </div>
-
-      <div className="space-y-4">
-        {questionResults.map((question, index) => (
-          <Card key={index} className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  {index + 1}. {question.questionText}
-                </h3>
-                <p
-                  className={`mt-2 text-sm font-medium ${
-                    question.isCorrect ? 'text-emerald-700' : 'text-rose-700'
-                  }`}
-                >
-                  {question.isCorrect ? 'Correct' : 'Incorrect'}
-                </p>
+        {/* Breakdown Stats */}
+        <div className="grid grid-cols-2 gap-4 w-full">
+          <div className="bg-slate-800/40 rounded-2xl p-5 border border-slate-700/50">
+            <p className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-1">Time Taken</p>
+            <p className="text-2xl font-bold text-textMain">{formatTime(timeTaken)}</p>
+          </div>
+          <div className="bg-slate-800/40 rounded-2xl p-5 border border-slate-700/50">
+            <p className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-1">Total Questions</p>
+            <p className="text-2xl font-bold text-textMain">{session.questions.length}</p>
+          </div>
+          <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+            <div className="bg-success/10 rounded-2xl p-4 border border-success/20 text-center">
+              <span className="block text-2xl font-bold text-success">{correctCount}</span>
+              <span className="text-xs font-semibold text-success/80 uppercase">Correct</span>
+            </div>
+            <div className="bg-error/10 rounded-2xl p-4 border border-error/20 text-center">
+              <span className="block text-2xl font-bold text-error">{wrongCount}</span>
+              <span className="text-xs font-semibold text-error/80 uppercase">Wrong</span>
+            </div>
+            {session.negativeMarking && session.negativeMarksPerWrong ? (
+              <div className="bg-warning/10 rounded-2xl p-4 border border-warning/20 text-center">
+                <span className="block text-2xl font-bold text-warning">-{deductions}</span>
+                <span className="text-xs font-semibold text-warning/80 uppercase">Penalty</span>
               </div>
-              <div className="text-sm text-slate-500">
-                {question.selectedAnswer >= 0
-                  ? `You chose ${String.fromCharCode(65 + question.selectedAnswer)}`
-                  : 'No answer selected'}
+            ) : (
+              <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50 text-center">
+                <span className="block text-2xl font-bold text-slate-300">{session.questions.length - answeredCount}</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase">Skipped</span>
               </div>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {question.options.map((option, idx) => {
-                const isSelected = idx === question.selectedAnswer
-                const isCorrectOption = idx === question.correctAnswer
-
-                return (
-                  <div
-                    key={idx}
-                    className={`rounded-lg p-3 border flex items-center justify-between text-sm ${
-                      isCorrectOption
-                        ? 'border-emerald-400 bg-emerald-50 text-emerald-900'
-                        : isSelected
-                        ? 'border-rose-400 bg-rose-50 text-rose-900'
-                        : 'border-slate-200 bg-white text-slate-700'
-                    }`}
-                  >
-                    <span className="font-medium">
-                      {String.fromCharCode(65 + idx)}.
-                    </span>
-                    <span className="flex-1 ml-2">{option}</span>
-                    {isCorrectOption && (
-                      <span className="ml-3 text-xs font-semibold uppercase tracking-wide">
-                        ✓ Correct
-                      </span>
-                    )}
-                    {!isCorrectOption && isSelected && (
-                      <span className="ml-3 text-xs font-semibold uppercase tracking-wide">
-                        ✕ Your answer
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="mt-4 rounded-lg bg-slate-50 p-4 border border-slate-200">
-              <p className="text-sm font-medium text-slate-700">Explanation</p>
-              <p className="mt-1 text-sm text-slate-600">{question.explanation}</p>
-            </div>
-          </Card>
-        ))}
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="flex justify-center">
-        <Button onClick={handleRestart} className="px-10">
-          Take another quiz
-        </Button>
+      {session.negativeMarking && session.negativeMarksPerWrong && (
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-textMain">Final Score: <span className="text-primary">{finalScore}</span></h2>
+        </div>
+      )}
+
+      {/* Review Section */}
+      <div className="space-y-6 mt-12">
+        <h3 className="text-2xl font-bold text-textMain tracking-tight px-2">Review Your Answers</h3>
+
+        {questionResults.map((question, index) => {
+          const isCorrect = question.isCorrect
+          const skipped = question.selectedAnswer === undefined
+
+          return (
+            <div key={index} className="glass-card p-6 md:p-8">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                <h4 className="text-lg md:text-xl font-bold text-textMain leading-snug">
+                  <span className="text-primary mr-2">{index + 1}.</span>
+                  {question.questionText}
+                </h4>
+                <div className="shrink-0">
+                  {isCorrect ? (
+                    <span className="inline-block px-3 py-1 rounded-md bg-success/20 text-success text-xs font-bold uppercase tracking-wider border border-success/30">Correct</span>
+                  ) : skipped ? (
+                    <span className="inline-block px-3 py-1 rounded-md bg-slate-700 text-slate-300 text-xs font-bold uppercase tracking-wider border border-slate-600">Skipped</span>
+                  ) : (
+                    <span className="inline-block px-3 py-1 rounded-md bg-error/20 text-error text-xs font-bold uppercase tracking-wider border border-error/30">Incorrect</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                {question.options.map((option, idx) => {
+                  const isSelected = idx === question.selectedAnswer
+                  const isCorrectOption = idx === question.correctAnswer
+
+                  let stateClass = "border-slate-700/50 bg-slate-800/30 text-slate-300"
+
+                  if (isCorrectOption) {
+                    stateClass = "border-success bg-success/10 text-success font-medium shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                  } else if (isSelected && !isCorrectOption) {
+                    stateClass = "border-error bg-error/10 text-error font-medium"
+                  } else if (isSelected) {
+                    // This block isn't hit since isCorrectOption catches it, but for safety
+                    stateClass = "border-primary bg-primary/10 text-primary"
+                  }
+
+                  return (
+                    <div key={idx} className={`w-full text-left rounded-xl border px-5 py-3 transition-colors ${stateClass} flex items-center justify-between`}>
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold shrink-0">{String.fromCharCode(65 + idx)}.</span>
+                        <span>{option}</span>
+                      </div>
+                      {isCorrectOption && <span className="text-xl">✓</span>}
+                      {isSelected && !isCorrectOption && <span className="text-xl">✕</span>}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {question.explanation && (
+                <div className="mt-4 rounded-xl bg-slate-800/80 p-5 border border-slate-700 border-l-4 border-l-secondary">
+                  <p className="text-xs font-bold text-secondary uppercase tracking-wider mb-2">Explanation</p>
+                  <p className="text-sm text-slate-300 leading-relaxed">{question.explanation}</p>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
-    </div>
+
+      <div className="flex justify-center pt-8">
+        <button onClick={handleRestart} className="btn-primary !px-12 !py-4 text-lg">
+          Start New Quiz
+        </button>
+      </div>
+    </motion.div>
   )
 }

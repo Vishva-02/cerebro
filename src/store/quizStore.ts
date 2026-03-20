@@ -27,7 +27,7 @@ interface QuizStore {
   resetStore: () => void
 
   // Quiz session actions
-  setQuestions: (questions: Question[], topic: string, difficulty: 'easy' | 'medium' | 'hard') => void
+  setQuestions: (questions: Question[], topic: string, difficulty: 'easy' | 'medium' | 'hard', timeLimit?: number, negativeMarking?: boolean, negativeMarksPerWrong?: number) => void
   answerQuestion: (questionIndex: number, answerIndex: number) => void
   toggleMarked: (questionIndex: number) => void
   goToQuestion: (questionIndex: number) => void
@@ -72,7 +72,7 @@ export const useQuizStore = create<QuizStore>()(
         resetStore: () => set(initialState),
 
         // Quiz session actions
-        setQuestions: (questions, topic, difficulty) =>
+        setQuestions: (questions, topic, difficulty, timeLimit, negativeMarking, negativeMarksPerWrong) =>
           set({
             session: {
               questions,
@@ -84,6 +84,9 @@ export const useQuizStore = create<QuizStore>()(
               startTime: new Date(),
               endTime: null,
               isCompleted: false,
+              timeLimit,
+              negativeMarking,
+              negativeMarksPerWrong,
             },
           }),
 
@@ -173,6 +176,16 @@ export const useQuizStore = create<QuizStore>()(
               return count + (answer === question.correctAnswer ? 1 : 0)
             }, 0)
 
+            const answeredCount = Object.keys(state.session.answers).length
+            const wrongCount = answeredCount - correctCount
+
+            let negativeMarksDeducted = 0
+            if (state.session.negativeMarking && state.session.negativeMarksPerWrong) {
+              negativeMarksDeducted = wrongCount * state.session.negativeMarksPerWrong
+            }
+
+            const finalScore = Math.max(0, correctCount - negativeMarksDeducted)
+
             const percentage = state.session.questions.length
               ? Math.round((correctCount / state.session.questions.length) * 100)
               : 0
@@ -186,6 +199,8 @@ export const useQuizStore = create<QuizStore>()(
               questions: state.session.questions,
               answers: state.session.answers,
               score: correctCount,
+              finalScore,
+              negativeMarksDeducted,
               percentage,
               completedAt: endTime,
               timeSpent: timeSpentSeconds,
