@@ -9,11 +9,10 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    ReferenceLine,
-    Cell
+    ReferenceLine
 } from 'recharts'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Info, TrendingUp, TrendingDown, Layers } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { TrendingUp, TrendingDown, Layers } from 'lucide-react'
 
 interface InsightItem {
     topic: string
@@ -32,7 +31,6 @@ const CustomFloatingBar = (props: any) => {
 
     const isUp = type === 'correct'
     const borderRadius = 8
-    const glowOpacity = 0.3
 
     return (
         <g>
@@ -55,7 +53,7 @@ const CustomFloatingBar = (props: any) => {
                 animate={{ height, y }}
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 rx={borderRadius}
-                style={{ filter: `drop-shadow(0px ${isUp ? 4 : -4}px 8px ${fill}${glowOpacity === 0 ? '' : '44'})` }}
+                style={{ filter: `drop-shadow(0px ${isUp ? 4 : -4}px 8px ${fill}44)` }}
             />
 
             {/* Top/Bottom Cap Light */}
