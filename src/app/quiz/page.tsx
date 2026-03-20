@@ -16,10 +16,11 @@ export default function QuizPage() {
     toggleMarked,
     goToQuestion,
     nextQuestion,
-    prevQuestion,
+    prevQuestion, // Renamed to previousQuestion in the instruction's proposed destructuring, but keeping original for now based on context
     skipQuestion,
     finishQuiz,
   } = useQuizStore()
+
 
   // Redirect if no session
   useEffect(() => {
@@ -71,14 +72,50 @@ export default function QuizPage() {
 
       if (remaining === 0) {
         setIsTimeUp(true)
-        finishQuiz()
       }
     }
 
     tick()
-    const timerId = setInterval(tick, 1000)
-    return () => clearInterval(timerId)
-  }, [timeLimitMs, session?.startTime, session?.isCompleted, finishQuiz, router])
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
+  }, [timeLimitMs, session?.startTime, session?.isCompleted])
+
+  // Effect to call finishQuiz when time is up
+  useEffect(() => {
+    if (isTimeUp) {
+      finishQuiz()
+      router.push('/results')
+    }
+  }, [isTimeUp, finishQuiz, router])
+
+  // --- HEARTBEAT / SESSION PERSISTENCE ---
+  useEffect(() => {
+    if (!session || session.isCompleted || !timeLeft) return
+
+    const saveSession = async () => {
+      try {
+        await fetch('/api/quiz/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: session.topic,
+            difficulty: session.difficulty,
+            currentQuestionIndex: session.currentQuestionIndex,
+            answers: session.answers,
+            timeLeft: Math.floor(timeLeft / 1000), // Save in seconds
+            status: 'in-progress'
+          })
+        })
+      } catch (err) {
+        console.error('Heartbeat failed:', err)
+      }
+    }
+
+    const interval = setInterval(saveSession, 15000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.currentQuestionIndex, session?.isCompleted, timeLeft, session?.topic, session?.difficulty, session?.answers])
+
 
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000)
@@ -100,10 +137,39 @@ export default function QuizPage() {
     answerQuestion(currentIndex, answerIndex)
   }
 
+  const handleFinish = async () => {
+    // 1. Mark as finished in local store first for immediate UI update
+    finishQuiz()
+
+    // 2. Persist to DB if authenticated
+    const results = useQuizStore.getState().attempts.slice(-1)[0] // Get the last attempt
+
+    if (results) {
+      try {
+        await fetch('/api/quiz/attempt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: results.topic,
+            difficulty: results.difficulty,
+            score: results.score,
+            totalQuestions: results.questionCount,
+            percentage: results.percentage,
+            timeSpent: results.timeSpent,
+          }),
+        })
+      } catch (error) {
+        console.error('Failed to save attempt to DB:', error)
+      }
+    }
+
+    setIsTimeUp(false)
+    router.push('/results')
+  }
+
   const handleNext = () => {
     if (isLastQuestion) {
-      finishQuiz()
-      router.push('/results')
+      handleFinish()
     } else {
       nextQuestion()
     }

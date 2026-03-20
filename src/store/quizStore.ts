@@ -37,6 +37,7 @@ interface QuizStore {
   finishQuiz: () => void
   retakeAttempt: (attemptId: string) => void
   resetSession: () => void
+  loadSession: (dbSession: any) => void
 }
 
 const initialState = {
@@ -266,6 +267,19 @@ export const useQuizStore = create<QuizStore>()(
           }),
 
         resetSession: () => set({ session: null }),
+
+        loadSession: (dbSession: any) =>
+          set(() => ({
+            session: {
+              ...dbSession,
+              questions: dbSession.questions || [],
+              startTime: new Date(dbSession.createdAt),
+              endTime: null,
+              isCompleted: false,
+              marked: {},
+              explicitlySkipped: {},
+            }
+          })),
       }),
       {
         name: 'quiz-storage', // localStorage key

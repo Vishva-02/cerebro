@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQuizStore } from '@/store/quizStore'
 import type { Question } from '@/types'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession } from 'next-auth/react'
 
 interface QuizFormData {
   topic: string
@@ -55,6 +56,29 @@ export default function Home() {
   }, [showForm])
 
   const handleStartQuiz = () => setShowForm(true)
+
+  const [activeSession, setActiveSession] = useState<any>(null)
+  const { data: authSession } = useSession()
+  const { loadSession } = useQuizStore()
+
+  useEffect(() => {
+    if (authSession) {
+      fetch('/api/quiz/session')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.id) {
+            setActiveSession(data)
+          }
+        })
+    }
+  }, [authSession])
+
+  const handleResume = () => {
+    if (activeSession) {
+      loadSession(activeSession)
+      router.push('/quiz')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -151,12 +175,34 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        <button
-          onClick={handleStartQuiz}
-          className="btn-primary text-lg !px-12 !py-4 rounded-full mt-4"
-        >
-          Start Quiz
-        </button>
+        <AnimatePresence>
+          {!showForm && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            >
+              <button
+                onClick={handleStartQuiz}
+                className="group relative flex items-center justify-center gap-3 overflow-hidden rounded-2xl bg-primary px-10 py-5 text-xl font-black uppercase tracking-widest text-slate-900 shadow-[0_0_30px_rgba(45,212,191,0.3)] transition-all hover:scale-105 hover:bg-white active:scale-95"
+              >
+                Start Quiz
+                <span className="text-2xl transition-transform group-hover:translate-x-2">→</span>
+              </button>
+
+              {activeSession && (
+                <button
+                  onClick={handleResume}
+                  className="group relative flex items-center justify-center gap-3 overflow-hidden rounded-2xl border-2 border-primary/30 bg-primary/5 px-10 py-5 text-xl font-black uppercase tracking-widest text-primary transition-all hover:scale-105 hover:bg-primary/10 active:scale-95"
+                >
+                  Resume Quiz
+                  <span className="text-2xl animate-pulse">↻</span>
+                </button>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     )
   }

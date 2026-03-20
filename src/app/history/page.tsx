@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuizStore } from '@/store/quizStore'
 import { Button } from '@/components/common/Button'
@@ -19,9 +19,28 @@ const formatDate = (date: Date | string) => {
 
 export default function HistoryPage() {
   const router = useRouter()
-  const { attempts, retakeAttempt } = useQuizStore()
+  const { retakeAttempt } = useQuizStore()
+  const [attempts, setAttempts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'easy' | 'medium' | 'hard'>('all')
   const [sortBy, setSortBy] = useState<'latest' | 'highest'>('latest')
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('/api/quiz/history')
+        if (res.ok) {
+          const data = await res.json()
+          setAttempts(data)
+        }
+      } catch (err) {
+        console.error('Failed to fetch history:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchHistory()
+  }, [])
 
   const filtered = useMemo(() => {
     let filteredAttempts = [...attempts]
@@ -35,7 +54,7 @@ export default function HistoryPage() {
     filteredAttempts.sort((a, b) => {
       if (sortBy === 'latest') {
         return (
-          new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
       }
       return b.score - a.score
@@ -94,7 +113,11 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <Card className="p-8 text-center animate-pulse">
+          <p className="text-slate-400">Loading your history...</p>
+        </Card>
+      ) : filtered.length === 0 ? (
         <Card className="p-8 text-center">
           <p className="text-slate-600">No quiz history yet. Take a quiz to get started!</p>
           <div className="mt-6">
