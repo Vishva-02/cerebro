@@ -1,18 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/common/Button'
 
+import { useSession } from 'next-auth/react'
+
 export default function LoginPage() {
     const router = useRouter()
+    const { status } = useSession()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (status === 'authenticated') {
+            router.push('/')
+        }
+    }, [status, router])
+
+    if (status === 'loading') {
+        return (
+            <div className="flex min-h-[80vh] items-center justify-center">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        )
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
