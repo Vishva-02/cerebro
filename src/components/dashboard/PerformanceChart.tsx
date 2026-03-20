@@ -1,5 +1,4 @@
-'use client'
-
+import { memo } from 'react'
 import {
     LineChart,
     Line,
@@ -17,7 +16,7 @@ interface PerformanceChartProps {
     isLoading: boolean
 }
 
-export function PerformanceChart({ data, isLoading }: PerformanceChartProps) {
+export const PerformanceChart = memo(({ data, isLoading }: PerformanceChartProps) => {
     return (
         <div className="glass-card p-6 h-full">
             <div className="flex items-center justify-between mb-8">
@@ -93,4 +92,6 @@ export function PerformanceChart({ data, isLoading }: PerformanceChartProps) {
             </div>
         </div>
     )
-}
+})
+
+PerformanceChart.displayName = 'PerformanceChart'

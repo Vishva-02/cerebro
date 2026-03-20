@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Target, BarChart3, HelpCircle } from 'lucide-react'
 
@@ -11,7 +12,7 @@ interface StatsCardsProps {
     isLoading: boolean
 }
 
-export function StatsCards({ stats, isLoading }: StatsCardsProps) {
+export const StatsCards = memo(({ stats, isLoading }: StatsCardsProps) => {
     const cards = [
         {
             label: 'Total Quizzes',
@@ -64,4 +65,6 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
             ))}
         </div>
     )
-}
+})
+
+StatsCards.displayName = 'StatsCards'

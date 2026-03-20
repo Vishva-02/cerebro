@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useQuizStore } from '@/store/quizStore'
+import type { QuizStore } from '@/store/quizStore'
+import { useShallow } from 'zustand/react/shallow'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/common/Button'
 import { ProgressBar } from '@/components/common/ProgressBar'
 import { QuestionTracker } from '@/components/quiz/QuestionTracker'
 import { ProctoringConsent } from '@/components/quiz/ProctoringConsent'
+import { QuizTimer } from '@/components/quiz/QuizTimer'
+import { useCallback } from 'react'
 
 const ProctoringMonitor = dynamic(
   () => import('@/components/quiz/ProctoringMonitor').then(mod => mod.ProctoringMonitor),
@@ -25,11 +29,21 @@ export default function QuizPage() {
     toggleMarked,
     goToQuestion,
     nextQuestion,
-    prevQuestion, // Renamed to previousQuestion in the instruction's proposed destructuring, but keeping original for now based on context
+    prevQuestion,
     skipQuestion,
     finishQuiz,
     startSession,
-  } = useQuizStore()
+  } = useQuizStore(useShallow((state: QuizStore) => ({
+    session: state.session,
+    answerQuestion: state.answerQuestion,
+    toggleMarked: state.toggleMarked,
+    goToQuestion: state.goToQuestion,
+    nextQuestion: state.nextQuestion,
+    prevQuestion: state.prevQuestion,
+    skipQuestion: state.skipQuestion,
+    finishQuiz: state.finishQuiz,
+    startSession: state.startSession,
+  })))
 
   const [hasConsented, setHasConsented] = useState(false)
 
@@ -41,7 +55,7 @@ export default function QuizPage() {
     }
   }, [session, router])
 
-  const markedMap = session?.marked ?? {}
+  const markedMap = useMemo(() => session?.marked ?? {}, [session?.marked])
   const isLoading = !session || session.questions.length === 0
   const currentIndex = session?.currentQuestionIndex ?? 0
 
@@ -53,13 +67,13 @@ export default function QuizPage() {
   const answeredCount = useMemo(() => {
     if (!session) return 0
     return Object.keys(session.answers).length
-  }, [session])
+  }, [session?.answers])
 
   const totalQuestions = session?.questions.length ?? 0
   const progress = useMemo(() => {
     if (!session || totalQuestions === 0) return 0
     return ((currentIndex + 1) / totalQuestions) * 100
-  }, [session, totalQuestions, currentIndex])
+  }, [totalQuestions, currentIndex, session])
 
   const lastIndexRef = useRef(currentIndex)
   const transitionDir = currentIndex >= lastIndexRef.current ? 1 : -1
@@ -69,28 +83,13 @@ export default function QuizPage() {
     lastIndexRef.current = currentIndex
   }, [currentIndex, session])
 
-  // Timer Logic
-  const timeLimitMs = session?.timeLimit ? session.timeLimit * 60 * 1000 : null
-  const [timeLeft, setTimeLeft] = useState<number | null>(timeLimitMs)
+  // Timer & Modal State
   const [isTimeUp, setIsTimeUp] = useState(false)
+  const timeLimitMinutes = session?.timeLimit ?? null
 
-  useEffect(() => {
-    if (timeLimitMs === null || !session?.startTime || session.isCompleted) return
-
-    const tick = () => {
-      const elapsed = Date.now() - new Date(session.startTime).getTime()
-      const remaining = Math.max(0, timeLimitMs - elapsed)
-      setTimeLeft(remaining)
-
-      if (remaining === 0) {
-        setIsTimeUp(true)
-      }
-    }
-
-    tick()
-    const timer = setInterval(tick, 1000)
-    return () => clearInterval(timer)
-  }, [timeLimitMs, session?.startTime, session?.isCompleted])
+  const handleTimeUp = useCallback(() => {
+    setIsTimeUp(true)
+  }, [])
 
   // Effect to call finishQuiz when time is up
   useEffect(() => {
@@ -102,7 +101,7 @@ export default function QuizPage() {
 
   // --- HEARTBEAT / SESSION PERSISTENCE ---
   useEffect(() => {
-    if (!session || session.isCompleted || !timeLeft) return
+    if (!session || session.isCompleted) return
 
     const saveSession = async () => {
       if (status !== 'authenticated') return
@@ -115,7 +114,8 @@ export default function QuizPage() {
             difficulty: session.difficulty,
             currentQuestionIndex: session.currentQuestionIndex,
             answers: session.answers,
-            timeLeft: Math.floor(timeLeft / 1000), // Save in seconds
+            // We can't easily get the 'timeLeft' from inside QuizTimer without exposing state
+            // but the backend can calculate it or we can just save other progress.
             status: 'in-progress'
           })
         })
@@ -126,31 +126,15 @@ export default function QuizPage() {
 
     const interval = setInterval(saveSession, 15000)
     return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.currentQuestionIndex, session?.isCompleted, timeLeft, session?.topic, session?.difficulty, session?.answers])
+  }, [session?.currentQuestionIndex, session?.isCompleted, session?.topic, session?.difficulty, session?.answers, status])
 
 
-  const formatTime = (ms: number) => {
-    const totalSeconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
-  }
-
-  const getTimerColorClass = () => {
-    if (timeLeft === null || timeLimitMs === null) return 'bg-slate-800 text-primary border-slate-700'
-    const ratio = timeLeft / timeLimitMs
-    if (ratio > 0.5) return 'bg-slate-800 text-primary border-slate-700'
-    if (ratio > 0.2) return 'bg-orange-500/20 text-orange-400 border-orange-500/40'
-    return 'bg-error text-white font-bold animate-pulse border-error shadow-[0_0_20px_rgba(239,68,68,0.5)]'
-  }
-
-  const handleAnswerSelect = (answerIndex: number) => {
+  const handleAnswerSelect = useCallback((answerIndex: number) => {
     if (!session) return
     answerQuestion(currentIndex, answerIndex)
-  }
+  }, [session, answerQuestion, currentIndex])
 
-  const handleFinish = async () => {
+  const handleFinish = useCallback(async () => {
     // 1. Mark as finished in local store first for immediate UI update
     finishQuiz()
 
@@ -178,17 +162,17 @@ export default function QuizPage() {
 
     setIsTimeUp(false)
     router.push('/results')
-  }
+  }, [finishQuiz, status, router])
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (isLastQuestion) {
       handleFinish()
     } else {
       nextQuestion()
     }
-  }
+  }, [isLastQuestion, handleFinish, nextQuestion])
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     skipQuestion(currentIndex)
     if (isLastQuestion) {
       finishQuiz()
@@ -196,11 +180,11 @@ export default function QuizPage() {
     } else {
       nextQuestion()
     }
-  }
+  }, [skipQuestion, currentIndex, isLastQuestion, finishQuiz, router, nextQuestion])
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     prevQuestion()
-  }
+  }, [prevQuestion])
 
   if (isLoading) {
     return (
@@ -271,13 +255,12 @@ export default function QuizPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              {timeLeft !== null && (
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${getTimerColorClass()}`}>
-                  <span className="text-sm opacity-80">⏱ Time:</span>
-                  <span className="text-lg tracking-wider font-mono">
-                    {formatTime(timeLeft)}
-                  </span>
-                </div>
+              {session?.startTime && (
+                <QuizTimer
+                  startTime={session.startTime}
+                  timeLimitMinutes={timeLimitMinutes}
+                  onTimeUp={handleTimeUp}
+                />
               )}
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -310,27 +293,27 @@ export default function QuizPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 gap-4">
-                  {currentQuestion.options.map((option, index) => {
-                    const selected = selectedAnswer === index
+                  {currentQuestion.options.map((option: string, index: number) => {
+                    const isSelected = selectedAnswer === index
                     const letter = String.fromCharCode(65 + index)
 
                     return (
                       <motion.button
                         key={index}
-                        onClick={() => handleAnswerSelect(index)}
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`w-full text-left rounded-2xl border px-5 py-4 transition-all duration-300 ${selected
-                          ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(45,212,191,0.15)]'
-                          : 'border-slate-700 bg-surface hover:border-slate-500 hover:bg-slate-800/80'
+                        className={`w-full justify-start text-left h-auto py-4 px-6 rounded-2xl border-2 transition-all duration-300 ${isSelected
+                          ? 'border-primary bg-primary/10 shadow-[0_0_20px_rgba(45,212,191,0.2)]'
+                          : 'border-slate-800 hover:border-slate-700 bg-slate-800/20'
                           }`}
+                        onClick={() => handleAnswerSelect(index)}
                       >
                         <div className="flex items-center gap-4">
-                          <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl font-bold ${selected ? 'bg-primary text-slate-900' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          <div className={`flex shrink-0 h-10 w-10 items-center justify-center rounded-xl font-bold ${isSelected ? 'bg-primary text-slate-900' : 'bg-slate-800 text-slate-400 border border-slate-700'
                             }`}>
                             {letter}
                           </div>
-                          <p className={`text-base font-medium ${selected ? 'text-primary' : 'text-slate-200'}`}>
+                          <p className={`text-base font-medium ${isSelected ? 'text-primary' : 'text-slate-200'}`}>
                             {option}
                           </p>
                         </div>

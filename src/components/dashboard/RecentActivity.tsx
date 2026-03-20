@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -8,7 +9,7 @@ interface RecentActivityProps {
     isLoading: boolean
 }
 
-export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
+export const RecentActivity = memo(({ activities, isLoading }: RecentActivityProps) => {
     return (
         <div className="glass-card p-6 h-full">
             <div className="flex items-center justify-between mb-6">
@@ -60,4 +61,6 @@ export function RecentActivity({ activities, isLoading }: RecentActivityProps) {
             </div>
         </div>
     )
-}
+})
+
+RecentActivity.displayName = 'RecentActivity'

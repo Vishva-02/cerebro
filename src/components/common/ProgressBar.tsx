@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 
 interface ProgressBarProps {
@@ -5,10 +6,10 @@ interface ProgressBarProps {
   className?: string
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({
+export const ProgressBar = memo(({
   progress,
   className = '',
-}) => {
+}: ProgressBarProps) => {
   const clamped = Math.min(100, Math.max(0, progress))
 
   return (
@@ -22,4 +23,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       />
     </div>
   )
-}
+})
+
+ProgressBar.displayName = 'ProgressBar'

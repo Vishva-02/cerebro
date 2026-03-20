@@ -25,7 +25,7 @@ export async function GET() {
         // Aggregate by topic
         const topicData: Record<string, { topic: string; correct: number; incorrect: number }> = {}
 
-        attempts.forEach((attempt) => {
+        attempts.forEach((attempt: { topic: string; score: number; totalQuestions: number }) => {
             if (!topicData[attempt.topic]) {
                 topicData[attempt.topic] = {
                     topic: attempt.topic,

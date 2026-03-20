@@ -26,7 +26,7 @@ const QUOTES = [
 
 export default function Home() {
   const router = useRouter()
-  const { setQuestions, setIsLoading, setError } = useQuizStore()
+  const { setQuestions, setIsLoading, setError, getCachedQuestions, cacheQuestions } = useQuizStore()
 
   const [showForm, setShowForm] = useState(false)
   const [quote, setQuote] = useState(QUOTES[0])
@@ -108,25 +108,38 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          topic: formData.topic,
-          difficulty: formData.difficulty,
-          count: formData.count
-        }),
-      })
+      // 1. Check Cache First
+      const cached = getCachedQuestions(formData.topic, formData.difficulty)
+      let questions: Question[] = []
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate quiz')
+      if (cached && cached.length >= formData.count) {
+        // Use cached questions (slice if user asked for fewer than cached)
+        questions = cached.slice(0, formData.count)
+      } else {
+        // 2. Fetch from API
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            topic: formData.topic,
+            difficulty: formData.difficulty,
+            count: formData.count
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate quiz')
+        }
+
+        const data = await response.json()
+        questions = data.questions
+
+        // 3. Update Cache
+        cacheQuestions(formData.topic, formData.difficulty, questions)
       }
-
-      const data = await response.json()
-      const questions: Question[] = data.questions
 
       setQuestions(
         questions,

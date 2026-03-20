@@ -7,13 +7,14 @@ import type { Quiz, QuizAttempt, QuizSession, Question, ProctoringData } from '@
  * Uses devtools for debugging and persist for localStorage
  */
 
-interface QuizStore {
+export interface QuizStore {
   // State
   quizzes: Quiz[]
   currentQuiz: Quiz | null
   attempts: QuizAttempt[]
   isLoading: boolean
   error: string | null
+  aiCache: Record<string, Question[]> // Cache for generated questions: "topic-difficulty" -> questions
 
   // Quiz session state
   session: QuizSession | null
@@ -40,6 +41,8 @@ interface QuizStore {
   loadSession: (dbSession: any) => void
   updateProctoring: (data: Partial<ProctoringData>) => void
   startSession: () => void
+  cacheQuestions: (topic: string, difficulty: string, questions: Question[]) => void
+  getCachedQuestions: (topic: string, difficulty: string) => Question[] | null
 }
 
 const initialState = {
@@ -49,12 +52,13 @@ const initialState = {
   isLoading: false,
   error: null,
   session: null,
+  aiCache: {},
 }
 
 export const useQuizStore = create<QuizStore>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         ...initialState,
 
         setCurrentQuiz: (quiz) => set({ currentQuiz: quiz }),
@@ -330,6 +334,19 @@ export const useQuizStore = create<QuizStore>()(
               }
             }
           }),
+
+        cacheQuestions: (topic, difficulty, questions) =>
+          set((state) => ({
+            aiCache: {
+              ...state.aiCache,
+              [`${topic.toLowerCase()}-${difficulty}`]: questions
+            }
+          })),
+
+        getCachedQuestions: (topic: string, difficulty: string): Question[] | null => {
+          const key = `${topic.toLowerCase()}-${difficulty}`
+          return get().aiCache[key] || null
+        },
       }),
       {
         name: 'quiz-storage', // localStorage key

@@ -1,5 +1,4 @@
-'use client'
-
+import { memo } from 'react'
 import { motion } from 'framer-motion'
 
 type Props = {
@@ -11,14 +10,14 @@ type Props = {
   onSelect: (index: number) => void
 }
 
-export function QuestionTracker({
+export const QuestionTracker = memo(({
   count,
   currentIndex,
   answers,
   marked,
   skipped,
   onSelect,
-}: Props) {
+}: Props) => {
   return (
     <div className="glass-card p-4 lg:p-5">
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -80,4 +79,6 @@ export function QuestionTracker({
       </div>
     </div>
   )
-}
+})
+
+QuestionTracker.displayName = 'QuestionTracker'

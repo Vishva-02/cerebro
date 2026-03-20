@@ -58,7 +58,7 @@ export default function ResultsPage() {
     const end = new Date(session.endTime ?? new Date())
     const timeTakenMs = end.getTime() - start.getTime()
 
-    const questionResults = session.questions.map((q, idx) => {
+    const questionResults = session.questions.map((q: any, idx: number) => {
       const selected = session.answers[idx]
       const isCorrect = selected === q.correctAnswer
       return {
@@ -71,7 +71,7 @@ export default function ResultsPage() {
       }
     })
 
-    const correct = questionResults.filter((r) => r.isCorrect).length
+    const correct = questionResults.filter((r: any) => r.isCorrect).length
     const answered = Object.keys(session.answers).length
     const wrong = answered - correct
     const skipped = Object.keys(session.explicitlySkipped ?? {}).length
@@ -247,7 +247,7 @@ export default function ResultsPage() {
       <div className="space-y-6 mt-12">
         <h3 className="text-2xl font-bold text-textMain tracking-tight px-2">Review Your Answers</h3>
 
-        {questionResults.map((question, index) => {
+        {questionResults.map((question: any, index: number) => {
           const isCorrect = question.isCorrect
           const skipped = question.selectedAnswer === undefined
 
@@ -270,7 +270,7 @@ export default function ResultsPage() {
               </div>
 
               <div className="space-y-3 mb-6">
-                {question.options.map((option, idx) => {
+                {question.options.map((option: string, idx: number) => {
                   const isSelected = idx === question.selectedAnswer
                   const isCorrectOption = idx === question.correctAnswer
 
