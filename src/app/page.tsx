@@ -64,8 +64,8 @@ export default function Home() {
       return
     }
 
-    if (formData.count < 5 || formData.count > 20) {
-      setFormError('Number of questions must be between 5 and 20')
+    if (formData.count < 5 || formData.count > 50) {
+      setFormError('Number of questions must be between 5 and 50')
       return
     }
 
@@ -146,7 +146,7 @@ export default function Home() {
               transition={{ duration: 0.5 }}
               className="text-lg md:text-xl text-slate-400 italic"
             >
-              "{quote}"
+              &quot;{quote}&quot;
             </motion.p>
           </AnimatePresence>
         </div>
@@ -202,8 +202,8 @@ export default function Home() {
                   type="button"
                   onClick={() => setFormData({ ...formData, difficulty: level as 'easy' | 'medium' | 'hard' })}
                   className={`py-3 rounded-xl border font-medium capitalize transition-all duration-200 ${formData.difficulty === level
-                      ? 'bg-primary text-slate-900 border-primary shadow-lg shadow-primary/20'
-                      : 'bg-surface text-slate-300 border-slate-700 hover:border-primary/50'
+                    ? 'bg-primary text-slate-900 border-primary shadow-lg shadow-primary/20'
+                    : 'bg-surface text-slate-300 border-slate-700 hover:border-primary/50'
                     }`}
                   disabled={isGenerating}
                 >
@@ -217,12 +217,20 @@ export default function Home() {
           <div className="space-y-3">
             <label className="flex items-center justify-between text-sm font-semibold text-primary uppercase tracking-wider">
               <span>3. Number of Questions</span>
-              <span className="text-textMain">{formData.count}</span>
+              <input
+                type="number"
+                min="5"
+                max="50"
+                value={formData.count}
+                onChange={e => setFormData({ ...formData, count: parseInt(e.target.value) || 5 })}
+                className="w-16 text-center bg-surface border border-slate-700 rounded-md text-textMain focus:outline-none focus:border-primary py-1"
+                disabled={isGenerating}
+              />
             </label>
             <input
               type="range"
               min="5"
-              max="20"
+              max="50"
               step="5"
               value={formData.count}
               onChange={e => setFormData({ ...formData, count: parseInt(e.target.value) })}
@@ -248,15 +256,29 @@ export default function Home() {
               </div>
 
               {formData.hasTimer && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-2">
-                  <label className="block text-xs text-slate-400 mb-2">Minutes limit</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.timerMinutes}
-                    onChange={e => setFormData({ ...formData, timerMinutes: parseInt(e.target.value) || 1 })}
-                    className="input-field py-2"
-                  />
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-3">
+                  <label className="block text-xs text-slate-400 mb-3">Minutes limit</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, timerMinutes: Math.max(1, formData.timerMinutes - 1) })}
+                      className="w-10 h-10 rounded-lg bg-surface border border-slate-700 text-textMain flex items-center justify-center hover:border-primary hover:text-primary transition-colors font-bold text-xl"
+                      disabled={isGenerating}
+                    >
+                      -
+                    </button>
+                    <span className="text-xl font-bold text-textMain w-12 text-center">
+                      {formData.timerMinutes}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, timerMinutes: formData.timerMinutes + 1 })}
+                      className="w-10 h-10 rounded-lg bg-surface border border-slate-700 text-textMain flex items-center justify-center hover:border-primary hover:text-primary transition-colors font-bold text-xl"
+                      disabled={isGenerating}
+                    >
+                      +
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </div>
@@ -277,15 +299,29 @@ export default function Home() {
               </div>
 
               {formData.hasNegativeMarking && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-2">
-                  <label className="block text-xs text-slate-400 mb-2">Deducted per wrong answer</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.negativeMarksPerWrong}
-                    onChange={e => setFormData({ ...formData, negativeMarksPerWrong: parseInt(e.target.value) || 1 })}
-                    className="input-field py-2"
-                  />
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-3">
+                  <label className="block text-xs text-slate-400 mb-3">Deducted per wrong answer</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, negativeMarksPerWrong: Math.max(1, formData.negativeMarksPerWrong - 1) })}
+                      className="w-10 h-10 rounded-lg bg-surface border border-slate-700 text-textMain flex items-center justify-center hover:border-primary hover:text-primary transition-colors font-bold text-xl"
+                      disabled={isGenerating}
+                    >
+                      -
+                    </button>
+                    <span className="text-xl font-bold text-textMain w-12 text-center">
+                      {formData.negativeMarksPerWrong}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, negativeMarksPerWrong: formData.negativeMarksPerWrong + 1 })}
+                      className="w-10 h-10 rounded-lg bg-surface border border-slate-700 text-textMain flex items-center justify-center hover:border-primary hover:text-primary transition-colors font-bold text-xl"
+                      disabled={isGenerating}
+                    >
+                      +
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </div>

@@ -14,7 +14,7 @@ const formatTime = (ms: number) => {
 
 export default function ResultsPage() {
   const router = useRouter()
-  const { session, resetSession } = useQuizStore()
+  const { session, resetSession, setQuestions } = useQuizStore()
 
   useEffect(() => {
     if (!session || session.questions.length === 0 || !session.isCompleted) {
@@ -26,6 +26,8 @@ export default function ResultsPage() {
     correctCount,
     wrongCount,
     answeredCount,
+    skippedCount,
+    notAnsweredCount,
     deductions,
     finalScore,
     percentage,
@@ -38,6 +40,8 @@ export default function ResultsPage() {
         correctCount: 0,
         wrongCount: 0,
         answeredCount: 0,
+        skippedCount: 0,
+        notAnsweredCount: 0,
         deductions: 0,
         finalScore: 0,
         percentage: 0,
@@ -67,6 +71,8 @@ export default function ResultsPage() {
     const correct = questionResults.filter((r) => r.isCorrect).length
     const answered = Object.keys(session.answers).length
     const wrong = answered - correct
+    const skipped = Object.keys(session.explicitlySkipped ?? {}).length
+    const notAnswered = session.questions.length - answered - skipped
 
     let negativePoints = 0
     if (session.negativeMarking && session.negativeMarksPerWrong) {
@@ -84,6 +90,8 @@ export default function ResultsPage() {
       correctCount: correct,
       wrongCount: wrong,
       answeredCount: answered,
+      skippedCount: skipped,
+      notAnsweredCount: notAnswered,
       deductions: negativePoints,
       finalScore: scoreAfterPenalty,
       percentage: pct,
@@ -96,6 +104,19 @@ export default function ResultsPage() {
   const handleRestart = () => {
     resetSession()
     router.push('/')
+  }
+
+  const handleRetake = () => {
+    if (!session) return
+    setQuestions(
+      session.questions,
+      session.topic,
+      session.difficulty,
+      session.timeLimit ?? undefined,
+      session.negativeMarking,
+      session.negativeMarksPerWrong
+    )
+    router.push('/quiz')
   }
 
   if (!session || session.questions.length === 0 || !session.isCompleted) {
@@ -145,16 +166,31 @@ export default function ResultsPage() {
         </div>
 
         {/* Breakdown Stats */}
-        <div className="grid grid-cols-2 gap-4 w-full">
-          <div className="bg-slate-800/40 rounded-2xl p-5 border border-slate-700/50">
-            <p className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-1">Time Taken</p>
-            <p className="text-2xl font-bold text-textMain">{formatTime(timeTaken)}</p>
-          </div>
-          <div className="bg-slate-800/40 rounded-2xl p-5 border border-slate-700/50">
-            <p className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-1">Total Questions</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
+          <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50">
+            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">Total</p>
             <p className="text-2xl font-bold text-textMain">{session.questions.length}</p>
           </div>
-          <div className="col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+          <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50">
+            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">Answered</p>
+            <p className="text-2xl font-bold text-textMain">{answeredCount}</p>
+          </div>
+          <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50">
+            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">Time</p>
+            <p className="text-2xl font-bold text-textMain">{formatTime(timeTaken)}</p>
+          </div>
+
+          <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50">
+            <p className="text-xs font-semibold tracking-wider text-[#A855F7]/80 uppercase mb-1">Skipped</p>
+            <p className="text-2xl font-bold text-[#A855F7]">{skippedCount}</p>
+          </div>
+          <div className="bg-error/5 rounded-2xl p-4 border border-error/10">
+            <p className="text-xs font-semibold tracking-wider text-error/80 uppercase mb-1">Missed</p>
+            <p className="text-2xl font-bold text-error">{notAnsweredCount}</p>
+          </div>
+          <div className="hidden sm:block"></div> {/* Spacer for grid alignment */}
+
+          <div className="col-span-2 sm:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
             <div className="bg-success/10 rounded-2xl p-4 border border-success/20 text-center">
               <span className="block text-2xl font-bold text-success">{correctCount}</span>
               <span className="text-xs font-semibold text-success/80 uppercase">Correct</span>
@@ -163,15 +199,10 @@ export default function ResultsPage() {
               <span className="block text-2xl font-bold text-error">{wrongCount}</span>
               <span className="text-xs font-semibold text-error/80 uppercase">Wrong</span>
             </div>
-            {session.negativeMarking && session.negativeMarksPerWrong ? (
-              <div className="bg-warning/10 rounded-2xl p-4 border border-warning/20 text-center">
+            {Boolean(session.negativeMarking && session.negativeMarksPerWrong) && (
+              <div className="bg-warning/10 rounded-2xl p-4 border border-warning/20 text-center col-span-2 sm:col-span-1">
                 <span className="block text-2xl font-bold text-warning">-{deductions}</span>
                 <span className="text-xs font-semibold text-warning/80 uppercase">Penalty</span>
-              </div>
-            ) : (
-              <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50 text-center">
-                <span className="block text-2xl font-bold text-slate-300">{session.questions.length - answeredCount}</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase">Skipped</span>
               </div>
             )}
           </div>
@@ -250,8 +281,11 @@ export default function ResultsPage() {
         })}
       </div>
 
-      <div className="flex justify-center pt-8">
-        <button onClick={handleRestart} className="btn-primary !px-12 !py-4 text-lg">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+        <button onClick={handleRetake} className="btn-primary !px-12 !py-4 text-lg w-full sm:w-auto">
+          Retake Quiz
+        </button>
+        <button onClick={handleRestart} className="relative inline-flex items-center justify-center font-bold tracking-wide transition-all duration-300 rounded-xl px-12 py-4 text-lg border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white w-full sm:w-auto">
           Start New Quiz
         </button>
       </div>

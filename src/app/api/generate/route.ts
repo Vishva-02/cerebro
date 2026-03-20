@@ -19,7 +19,7 @@ const validateRequestBody = (
     typeof candidate.count === 'number' &&
     Number.isInteger(candidate.count) &&
     candidate.count > 0 &&
-    candidate.count <= 20
+    candidate.count <= 50
   )
 }
 

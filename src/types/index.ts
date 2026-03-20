@@ -34,6 +34,8 @@ export interface QuizAttempt {
   score: number // Correct answers
   finalScore: number // Score after deductions
   negativeMarksDeducted: number
+  skippedCount: number
+  notAnsweredCount: number
   percentage: number
   completedAt: Date
   timeSpent: number // in seconds
@@ -67,6 +69,8 @@ export interface QuizSession {
   answers: Record<number, number>
   // Questions the user explicitly flagged for later review.
   marked: Record<number, boolean>
+  // Questions the user explicitly skipped
+  explicitlySkipped: Record<number, boolean>
   startTime: Date
   endTime: Date | null
   isCompleted: boolean

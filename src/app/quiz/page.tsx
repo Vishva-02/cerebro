@@ -17,6 +17,7 @@ export default function QuizPage() {
     goToQuestion,
     nextQuestion,
     prevQuestion,
+    skipQuestion,
     finishQuiz,
   } = useQuizStore()
 
@@ -58,6 +59,7 @@ export default function QuizPage() {
   // Timer Logic
   const timeLimitMs = session?.timeLimit ? session.timeLimit * 60 * 1000 : null
   const [timeLeft, setTimeLeft] = useState<number | null>(timeLimitMs)
+  const [isTimeUp, setIsTimeUp] = useState(false)
 
   useEffect(() => {
     if (timeLimitMs === null || !session?.startTime || session.isCompleted) return
@@ -68,8 +70,8 @@ export default function QuizPage() {
       setTimeLeft(remaining)
 
       if (remaining === 0) {
+        setIsTimeUp(true)
         finishQuiz()
-        router.push('/results')
       }
     }
 
@@ -86,11 +88,11 @@ export default function QuizPage() {
   }
 
   const getTimerColorClass = () => {
-    if (timeLeft === null || timeLimitMs === null) return 'text-primary'
+    if (timeLeft === null || timeLimitMs === null) return 'bg-slate-800 text-primary border-slate-700'
     const ratio = timeLeft / timeLimitMs
-    if (ratio > 0.5) return 'text-primary'
-    if (ratio > 0.2) return 'text-warning'
-    return 'text-error animate-pulse font-bold'
+    if (ratio > 0.5) return 'bg-slate-800 text-primary border-slate-700'
+    if (ratio > 0.2) return 'bg-orange-500/20 text-orange-400 border-orange-500/40'
+    return 'bg-error text-white font-bold animate-pulse border-error shadow-[0_0_20px_rgba(239,68,68,0.5)]'
   }
 
   const handleAnswerSelect = (answerIndex: number) => {
@@ -99,6 +101,16 @@ export default function QuizPage() {
   }
 
   const handleNext = () => {
+    if (isLastQuestion) {
+      finishQuiz()
+      router.push('/results')
+    } else {
+      nextQuestion()
+    }
+  }
+
+  const handleSkip = () => {
+    skipQuestion(currentIndex)
     if (isLastQuestion) {
       finishQuiz()
       router.push('/results')
@@ -141,6 +153,7 @@ export default function QuizPage() {
             currentIndex={currentIndex}
             answers={session.answers}
             marked={markedMap}
+            skipped={session.explicitlySkipped ?? {}}
             onSelect={goToQuestion}
           />
 
@@ -172,9 +185,9 @@ export default function QuizPage() {
 
             <div className="flex items-center gap-4">
               {timeLeft !== null && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700">
-                  <span className="text-sm text-slate-400">⏱ Time:</span>
-                  <span className={`text-lg tracking-wider font-mono ${getTimerColorClass()}`}>
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${getTimerColorClass()}`}>
+                  <span className="text-sm opacity-80">⏱ Time:</span>
+                  <span className="text-lg tracking-wider font-mono">
                     {formatTime(timeLeft)}
                   </span>
                 </div>
@@ -184,8 +197,8 @@ export default function QuizPage() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => toggleMarked(currentIndex)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-colors ${currentMarked
-                    ? 'border-warning/50 bg-warning/10 text-warning'
-                    : 'border-slate-600 bg-transparent text-slate-400 hover:border-slate-400 hover:text-slate-200'
+                  ? 'border-warning/50 bg-warning/10 text-warning'
+                  : 'border-slate-600 bg-transparent text-slate-400 hover:border-slate-400 hover:text-slate-200'
                   }`}
               >
                 {currentMarked ? '📍 Marked' : 'Mark for review'}
@@ -221,8 +234,8 @@ export default function QuizPage() {
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.98 }}
                         className={`w-full text-left rounded-2xl border px-5 py-4 transition-all duration-300 ${selected
-                            ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(45,212,191,0.15)]'
-                            : 'border-slate-700 bg-surface hover:border-slate-500 hover:bg-slate-800/80'
+                          ? 'border-primary bg-primary/10 shadow-[0_0_15px_rgba(45,212,191,0.15)]'
+                          : 'border-slate-700 bg-surface hover:border-slate-500 hover:bg-slate-800/80'
                           }`}
                       >
                         <div className="flex items-center gap-4">
@@ -250,13 +263,22 @@ export default function QuizPage() {
                     Previous
                   </Button>
 
-                  <Button
-                    onClick={handleNext}
-                    disabled={!hasAnswer && !isLastQuestion} // Allows finishing even if not all answered
-                    className="w-full sm:w-auto px-10 btn-primary"
-                  >
-                    {isLastQuestion ? 'Submit Final Quiz' : 'Next Question'}
-                  </Button>
+                  <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
+                    <Button
+                      onClick={handleSkip}
+                      variant="secondary"
+                      className="w-full sm:w-auto px-8 bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-bold tracking-wide"
+                    >
+                      {isLastQuestion ? 'Skip & Finish' : 'Skip Question'}
+                    </Button>
+                    <Button
+                      onClick={handleNext}
+                      disabled={!hasAnswer}
+                      className="w-full sm:w-auto px-10 btn-primary"
+                    >
+                      {isLastQuestion ? 'Submit Final Quiz' : 'Next Question'}
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -264,6 +286,36 @@ export default function QuizPage() {
 
         </div>
       </div>
+
+      {/* Time Up Modal */}
+      <AnimatePresence>
+        {isTimeUp && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="glass-card p-10 max-w-sm w-full text-center flex flex-col items-center justify-center space-y-6 shadow-2xl shadow-error/20 border-error/50"
+            >
+              <div className="w-16 h-16 rounded-full bg-error/10 flex items-center justify-center text-error text-3xl mb-2">
+                ⏱️
+              </div>
+              <h2 className="text-3xl font-extrabold text-white">Time is over!</h2>
+              <p className="text-slate-300">Your current answers have been saved.</p>
+              <Button
+                onClick={() => router.push('/results')}
+                className="btn-primary w-full h-12 mt-4"
+              >
+                View Results
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }

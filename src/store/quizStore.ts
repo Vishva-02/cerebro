@@ -33,6 +33,7 @@ interface QuizStore {
   goToQuestion: (questionIndex: number) => void
   nextQuestion: () => void
   prevQuestion: () => void
+  skipQuestion: (questionIndex: number) => void
   finishQuiz: () => void
   retakeAttempt: (attemptId: string) => void
   resetSession: () => void
@@ -81,6 +82,7 @@ export const useQuizStore = create<QuizStore>()(
               currentQuestionIndex: 0,
               answers: {}, // Reset answers when starting a new quiz
               marked: {}, // Reset marks when starting a new quiz
+              explicitlySkipped: {}, // Reset skips
               startTime: new Date(),
               endTime: null,
               isCompleted: false,
@@ -97,10 +99,14 @@ export const useQuizStore = create<QuizStore>()(
               ...state.session.answers,
               [questionIndex]: answerIndex,
             }
+            const newSkipped = { ...state.session.explicitlySkipped }
+            delete newSkipped[questionIndex]
+
             return {
               session: {
                 ...state.session,
                 answers: newAnswers,
+                explicitlySkipped: newSkipped,
               },
             }
           }),
@@ -162,6 +168,24 @@ export const useQuizStore = create<QuizStore>()(
             }
           }),
 
+        skipQuestion: (questionIndex) =>
+          set((state) => {
+            if (!state.session) return state
+            const newAnswers = { ...state.session.answers }
+            delete newAnswers[questionIndex]
+
+            return {
+              session: {
+                ...state.session,
+                answers: newAnswers,
+                explicitlySkipped: {
+                  ...(state.session.explicitlySkipped ?? {}),
+                  [questionIndex]: true,
+                },
+              },
+            }
+          }),
+
         finishQuiz: () =>
           set((state) => {
             if (!state.session) return state
@@ -178,6 +202,9 @@ export const useQuizStore = create<QuizStore>()(
 
             const answeredCount = Object.keys(state.session.answers).length
             const wrongCount = answeredCount - correctCount
+
+            const skippedCount = Object.keys(state.session.explicitlySkipped ?? {}).length
+            const notAnsweredCount = state.session.questions.length - answeredCount - skippedCount
 
             let negativeMarksDeducted = 0
             if (state.session.negativeMarking && state.session.negativeMarksPerWrong) {
@@ -201,6 +228,8 @@ export const useQuizStore = create<QuizStore>()(
               score: correctCount,
               finalScore,
               negativeMarksDeducted,
+              skippedCount,
+              notAnsweredCount,
               percentage,
               completedAt: endTime,
               timeSpent: timeSpentSeconds,
@@ -228,6 +257,7 @@ export const useQuizStore = create<QuizStore>()(
                 currentQuestionIndex: 0,
                 answers: {},
                 marked: {},
+                explicitlySkipped: {},
                 startTime: new Date(),
                 endTime: null,
                 isCompleted: false,
