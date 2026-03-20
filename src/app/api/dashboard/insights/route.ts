@@ -6,11 +6,11 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
     try {
         const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        if (!session || !session.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const userId = session.user.id
+        const userId = (session.user as any).id
 
         // Fetch all attempts for this user
         const attempts = await prisma.quizAttempt.findMany({
