@@ -269,7 +269,7 @@ export default function QuizPage() {
                       variant="secondary"
                       className="w-full sm:w-auto px-8 bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 font-bold tracking-wide"
                     >
-                      {isLastQuestion ? 'Skip & Finish' : 'Skip Question'}
+                      {isLastQuestion ? 'Skip and Finish' : 'Skip Question'}
                     </Button>
                     <Button
                       onClick={handleNext}

@@ -110,11 +110,11 @@ export default function HistoryPage() {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
                   <p className="text-sm text-slate-500">{formatDate(attempt.completedAt)}</p>
-                  <h2 className="text-xl font-semibold text-slate-900">
+                  <h2 className="text-xl font-semibold text-textMain">
                     {attempt.topic} ({attempt.difficulty})
                   </h2>
-                  <p className="text-sm text-slate-600">
-                    Score: {attempt.score} / {attempt.questionCount} &middot; {attempt.percentage}%
+                  <p className="text-sm text-slate-400">
+                    Score: {attempt.score} / {attempt.questionCount} · {attempt.percentage}%
                   </p>
                 </div>
 
