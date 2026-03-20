@@ -94,11 +94,11 @@ export function NavBar() {
             ) : status === 'loading' ? (
               <div className="w-8 h-8 rounded-full bg-slate-800 animate-pulse" />
             ) : (
-              <div className="flex items-center gap-2">
-                <Link href="/login" className="text-xs font-bold text-slate-400 hover:text-textMain transition-colors">
+              <div className="flex items-center gap-2 flex-nowrap shrink-0">
+                <Link href="/login" className="text-xs font-bold text-slate-400 hover:text-textMain transition-colors whitespace-nowrap">
                   LOG IN
                 </Link>
-                <Link href="/signup" className="text-[10px] font-black bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg hover:bg-primary hover:text-slate-950 transition-all uppercase tracking-tight">
+                <Link href="/signup" className="text-[10px] font-black bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-lg hover:bg-primary hover:text-slate-950 transition-all uppercase tracking-tight whitespace-nowrap">
                   SIGN UP
                 </Link>
               </div>
